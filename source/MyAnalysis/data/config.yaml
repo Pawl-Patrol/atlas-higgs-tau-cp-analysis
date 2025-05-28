@@ -1,0 +1,4 @@
+# Common (global) services to run.
+CommonServices:
+    # Turn on/off systematics
+    runSystematics: True
