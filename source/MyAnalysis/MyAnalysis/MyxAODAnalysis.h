@@ -2,9 +2,14 @@
 #define MyAnalysis_MyxAODAnalysis_H
 
 #include <AnaAlgorithm/AnaAlgorithm.h>
+#include <TH1.h>
 
 class MyxAODAnalysis : public EL::AnaAlgorithm
 {
+private:
+  unsigned int m_runNumber = 0;
+  unsigned long long m_eventNumber = 0;
+
 public:
   // This is a standard algorithm constructor
   MyxAODAnalysis (const std::string& name, ISvcLocator* pSvcLocator);
@@ -16,7 +21,6 @@ public:
 
 private:
   // Configuration, and any other types of variables go here.
-
 };
 
 #endif

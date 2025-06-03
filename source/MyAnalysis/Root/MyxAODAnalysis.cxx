@@ -1,6 +1,6 @@
 #include <AsgMessaging/MessageCheck.h>
 #include <MyAnalysis/MyxAODAnalysis.h>
-
+#include <xAODEventInfo/EventInfo.h>
 
 
 MyxAODAnalysis :: MyxAODAnalysis (const std::string& name,
@@ -22,6 +22,13 @@ StatusCode MyxAODAnalysis :: initialize ()
   // beginning on each worker node, e.g. create histograms and output
   // trees. This method gets called before any input files are
   // connected.
+
+  // Book run number histogram
+  ANA_CHECK (book (TH1F ("runNumber", "runNumber", 10, 284495, 284505)));
+
+  // Book event number histogram
+  ANA_CHECK (book (TH1F ("eventNumber", "eventNumber", 100, 394.445e6, 394.455e6)));
+
   return StatusCode::SUCCESS;
 }
 
@@ -33,6 +40,15 @@ StatusCode MyxAODAnalysis :: execute ()
   // events, e.g. read input variables, apply cuts, and fill
   // histograms and trees. This is where most of your actual analysis
   // code will go.
+  const xAOD::EventInfo *eventInfo = nullptr;
+  ANA_CHECK(evtStore()->retrieve(eventInfo, "EventInfo"));
+
+  m_runNumber = eventInfo->runNumber();
+  m_eventNumber = eventInfo->eventNumber();
+  
+  hist("runNumber")->Fill(m_runNumber);
+  hist("eventNumber")->Fill(m_eventNumber);
+
   return StatusCode::SUCCESS;
 }
 
