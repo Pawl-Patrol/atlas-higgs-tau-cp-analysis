@@ -1,3 +1,5 @@
 {
-    "cmake.sourceDirectory": "/home/padi617e/tutorial/AnalysisTutorial/source"
+    "cmake.sourceDirectory": "/home/padi617e/tutorial/AnalysisTutorial/source",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.default.compilerPath": "/usr/bin/g++"
 }
