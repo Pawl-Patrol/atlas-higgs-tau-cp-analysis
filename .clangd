@@ -1,0 +1,19 @@
+CompileFlags:
+  Add: [
+    "-Isource/MyAnalysis",
+    "-stdlib=libstdc++"
+  ]
+  CompilationDatabase: "build"
+
+Diagnostics:
+  Suppress: "*"
+
+# Diagnostics:
+#   DisplayOptions:
+#     ShowNoteIncludeStack: true
+
+Index:
+  Background: Build
+
+# Log:
+#   Level: verbose

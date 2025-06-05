@@ -5,20 +5,21 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt"
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/PhysicsAnalysis/D3PDTools/AnaAlgorithm",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthToolSupport/AsgMessaging",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/CxxUtils",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthToolSupport/AsgTools",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/xAODRootAccessInterfaces",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/xAODRootAccess",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthContainers",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthContainersInterfaces",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthLinksSA",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Event/xAOD/xAODCore",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/RootUtils",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Event/xAOD/xAODEventFormat",
-                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Event/xAOD/xAODEventInfo"
+                // "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt"
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/PhysicsAnalysis/D3PDTools/AnaAlgorithm",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthToolSupport/AsgMessaging",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/CxxUtils",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthToolSupport/AsgTools",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/xAODRootAccessInterfaces",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/xAODRootAccess",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthContainers",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthContainersInterfaces",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/AthLinksSA",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Control/RootUtils",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Event/xAOD/xAODCore",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Event/xAOD/xAODTruth",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Event/xAOD/xAODEventFormat",
+                "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBase/25.2.46/InstallArea/x86_64-el9-gcc13-opt/src/Event/xAOD/xAODEventInfo"
             ],
             // "compileCommands": [
             //     "${workspaceFolder}/build/compile_commands.json"

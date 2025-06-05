@@ -1,0 +1,330 @@
+#include <AsgMessaging/MessageCheck.h>
+#include <MyAnalysis/MyxAODAnalysis.h>
+#include <xAODEventInfo/EventInfo.h>
+#include <xAODTruth/TruthEventContainer.h>
+#include <xAODTruth/TruthParticle.h>
+#include <xAODTruth/TruthParticleContainer.h>
+#include <cmath>
+
+MyxAODAnalysis :: MyxAODAnalysis (const std::string& name,
+                                  ISvcLocator *pSvcLocator)
+    : EL::AnaAlgorithm (name, pSvcLocator)
+{
+  // Here you put any code for the base initialization of variables,
+  // e.g. initialize all pointers to 0.  This is also where you
+  // declare all properties for your algorithm.  Note that things like
+  // resetting statistics variables or booking histograms should
+  // rather go into the initialize() function.
+}
+
+
+
+StatusCode MyxAODAnalysis :: initialize ()
+{
+  // Here you do everything that needs to be done at the very
+  // beginning on each worker node, e.g. create histograms and output
+  // trees.  This method gets called before any input files are
+  // connected.
+  ANA_MSG_INFO ("in initialize");
+
+  ANA_CHECK (book (TTree ("truth_tau_analysis", "Zee analysis ntuple")));
+  TTree* mytree = tree ("truth_tau_analysis");
+  mytree->Branch ("run_number", &m_runNumber);
+  mytree->Branch ("event_number", &m_eventNumber);
+  //mytree->Branch ("lead_pion_phi", &m_lead_pion_phi);
+  //mytree->Branch ("lead_pion_eta", &m_lead_pion_eta);
+  //mytree->Branch ("sublead_pion_phi", &m_lead_pion_phi);
+  //mytree->Branch ("sublead_pion_eta", &m_lead_pion_eta);
+  //mytree->Branch ("deltaR", &m_deltaR);
+  //mytree->Branch ("deltaR_boost_pos", &m_deltaR_boost_pos);
+  //mytree->Branch ("deltaR_boost_neg", &m_deltaR_boost_neg);
+  //mytree->Branch ("phi_boosted_pos", &m_phi_boosted_pos);
+  //mytree->Branch ("eta_boosted_pos", &m_eta_boosted_pos);
+  //mytree->Branch ("phi_boosted_neg", &m_phi_boosted_neg);
+  //mytree->Branch ("eta_boosted_neg", &m_eta_boosted_neg);
+  //mytree->Branch ("energy_ratio_higgs_rf", &m_energy_ratio_higgs_rf);
+  //mytree->Branch ("angle_decay_part_higgs_rf", &m_angle_decay_part_higgs_rf);
+  //mytree->Branch ("deltaAngle_boost_pos", &m_deltaAngle_boost_pos);
+  //mytree->Branch ("deltaAngle_boost_neg", &m_deltaAngle_boost_neg);
+  mytree->Branch ("phi_CP_tau_pi", &m_phi_CP);
+  mytree->Branch ("phi_CP_neutrino_pi", &m_phi_CP_neutri);
+  
+  return StatusCode::SUCCESS;
+}
+
+
+
+StatusCode MyxAODAnalysis :: execute ()
+{
+  // Here you do everything that needs to be done on every single
+  // events, e.g. read input variables, apply cuts, and fill
+  // histograms and trees.  This is where most of your actual analysis
+  // code will go.
+  //ANA_MSG_INFO ("in execute");
+
+  // retrieve the eventInfo object from the event store
+  const xAOD::EventInfo *eventInfo = nullptr;
+  ANA_CHECK (evtStore()->retrieve (eventInfo, "EventInfo"));
+
+  // print out run and event number from retrieved object
+  //ANA_MSG_INFO ("in execute, runNumber = " << eventInfo->runNumber() << ", eventNumber = " << eventInfo->eventNumber());
+
+  // Read/fill the EventInfo variables:
+  const xAOD::EventInfo* ei = nullptr;
+  ANA_CHECK (evtStore()->retrieve (ei, "EventInfo"));
+  m_runNumber = ei->runNumber ();
+  m_eventNumber = ei->eventNumber ();
+
+  //const xAOD::TruthParticleContainer* truthParticles = nullptr; 
+  //ANA_CHECK(evtStore()->retrieve(truthParticles, "TruthTausWithDecayParticles"));
+
+  //m_lead_pion_phi = -99999.;
+  //m_lead_pion_eta = -99999.;
+  //m_sublead_pion_phi = -99999.;
+  //m_sublead_pion_eta = -99999.;
+  //m_deltaR_boost_pos = -99999.;
+  //m_deltaR_boost_neg = -99999.;
+  //m_phi_boosted_pos = -99999.;
+  //m_eta_boosted_pos = -99999.;
+  //m_phi_boosted_neg = -99999.;
+  //m_eta_boosted_neg = -99999.;
+  //m_energy_ratio_higgs_rf = -99999.;
+  //m_angle_decay_part_higgs_rf = -99999.;
+  //m_deltaAngle_boost_pos = -99999.;
+  //m_deltaAngle_boost_neg = -99999.;
+  m_phi_CP = -99999.;
+  m_phi_CP_neutri = -99999.;
+  
+  bool switch_BSM = false;
+  const xAOD::TruthParticleContainer* truthHiggs = nullptr;
+  ANA_CHECK(evtStore()->retrieve(truthHiggs, "TruthBoson"));
+  if (evtStore()->contains<xAOD::TruthParticleContainer>("TruthBSM")) {
+    if (evtStore()->retrieve(truthHiggs, "TruthBSM")) {
+      if (!truthHiggs->empty()) {
+        switch_BSM = true;
+  //    }
+      }
+    }
+  }
+
+  if (switch_BSM == true){
+    ANA_CHECK(evtStore()->retrieve(truthHiggs, "TruthBSM"));
+  }
+  else{
+    ANA_CHECK(evtStore()->retrieve(truthHiggs, "TruthBoson"));
+    //ANA_MSG_INFO ("in execute, found no truthBSM events!");
+  }
+
+
+  
+  const xAOD::TruthParticleContainer* truthTauParticles = nullptr;
+  ANA_CHECK(evtStore()->retrieve(truthTauParticles, "TruthTaus"));
+
+  const xAOD::TruthParticleContainer* truthTausWithDecayParticles = nullptr;
+  ANA_CHECK(evtStore()->retrieve(truthTausWithDecayParticles, "TruthTausWithDecayParticles"));
+  
+  TLorentzVector higgs_p4;
+  TLorentzVector sumMomentumTaus;
+
+  TLorentzVector tau_pos_p4 = TLorentzVector(0., 0., 0., 0.);
+  TLorentzVector tau_neg_p4 = TLorentzVector(0., 0., 0., 0.);  
+  TLorentzVector pi_pos_p4 = TLorentzVector(0., 0., 0., 0.);
+  TLorentzVector pi_neg_p4 = TLorentzVector(0., 0., 0., 0.);
+  TLorentzVector aneutri_p4 = TLorentzVector(0., 0., 0., 0.);
+  TLorentzVector neutri_p4 = TLorentzVector(0., 0., 0., 0.);
+
+  TLorentzVector sumMomentumDP;
+  
+  for (const xAOD::TruthParticle* higgs : *truthHiggs) {
+    higgs_p4 = higgs->p4();
+  }
+
+
+  int tauCount = 0;
+  for (const xAOD::TruthParticle* tau : *truthTauParticles) {
+    if (tau->nParents() > 0){
+      if (abs(tau->parent(0)->pdgId()) == 25 && tauCount >= 2){
+        ANA_MSG_INFO ("Tau count exceeds 2! Excluding event!");
+        tau_pos_p4 = TLorentzVector(0., 0., 0., 0.);
+        tau_neg_p4 = TLorentzVector(0., 0., 0., 0.);
+        break;
+      }
+      else{
+        if (abs(tau->parent(0)->pdgId()) == 25 ){
+          tauCount += 1;
+          if (tau->pdgId() == -15){
+            tau_pos_p4 = tau->p4();
+          }
+          if (tau->pdgId() == 15){
+            tau_neg_p4 = tau->p4();
+          }
+        }
+      }
+    }
+  }
+
+  int ch_pion_count = 0;
+  for(auto part: *truthTausWithDecayParticles){
+    if(abs(part->pdgId()) ==  211) {
+      ch_pion_count += 1;
+    }
+  }  
+  if (ch_pion_count == 2){
+    for (const xAOD::TruthParticle* particle : *truthTausWithDecayParticles) {
+      if (particle->nParents() > 0){
+        if (particle->pdgId() == 211) {
+          if (particle->parent(0)->pdgId() == -15){
+            pi_pos_p4 = particle->p4();
+          }
+        }   
+        if (particle->pdgId() == -211) {
+          if (particle->parent(0)->pdgId() == 15){
+            pi_neg_p4 = particle->p4();
+          }
+        }
+      }
+    }
+  }
+
+  int ch_tau_neutri_count = 0;
+  for(auto part: *truthTausWithDecayParticles){
+    if(abs(part->pdgId()) ==  16) {
+      ch_tau_neutri_count += 1;
+    }
+  }  
+  if (ch_tau_neutri_count == 2){
+    for (const xAOD::TruthParticle* particle : *truthTausWithDecayParticles) {
+      if (particle->nParents() > 0){
+        if (particle->pdgId() == -16) {
+          if (particle->parent(0)->pdgId() == -15){
+            aneutri_p4 = particle->p4();
+          }
+        }   
+        if (particle->pdgId() == 16) {
+          if (particle->parent(0)->pdgId() == 15){
+            neutri_p4 = particle->p4();
+          }
+        }
+      }
+    }
+  }
+
+  TVector3 boostHiggsVector = higgs_p4.BoostVector();
+
+  if (tau_pos_p4 == TLorentzVector(0., 0., 0., 0.) || tau_neg_p4 == TLorentzVector(0., 0., 0., 0.) || pi_pos_p4 == TLorentzVector(0., 0., 0., 0.) || pi_neg_p4 == TLorentzVector(0., 0., 0., 0.)){
+    m_phi_CP = -99999.;
+  }
+  else{
+    tau_pos_p4.Boost(-boostHiggsVector);
+    tau_neg_p4.Boost(-boostHiggsVector);
+    pi_pos_p4.Boost(-boostHiggsVector);
+    pi_neg_p4.Boost(-boostHiggsVector);
+    aneutri_p4.Boost(-boostHiggsVector);
+    neutri_p4.Boost(-boostHiggsVector);
+    
+    //ANA_MSG_INFO ("in execute, got pi+ pi- decay!");
+    //ANA_MSG_INFO ("tau_pos_p4.Pt() = " << tau_pos_p4.Pt() << "   tau_neg_p4.Pt() = " << tau_neg_p4.Pt() << "   pi_pos_p4.Pt() = " << pi_pos_p4.Pt() << "   pi_neg_p4.Pt() = " << pi_neg_p4.Pt() );
+    TVector3 norm_vec_pos = (tau_pos_p4.Vect().Cross(pi_pos_p4.Vect())).Unit();
+    TVector3 norm_vec_neg = (tau_neg_p4.Vect().Cross(pi_neg_p4.Vect())).Unit();
+
+    TVector3 norm_vec_pos_aneutri = (aneutri_p4.Vect().Cross(pi_pos_p4.Vect())).Unit();
+    TVector3 norm_vec_neg_neutri = (neutri_p4.Vect().Cross(pi_neg_p4.Vect())).Unit();
+
+    double angleO = pi_neg_p4.Vect().Unit()*(norm_vec_pos.Cross(norm_vec_neg));
+    double angleO_neutri = pi_neg_p4.Vect().Unit()*(norm_vec_pos_aneutri.Cross(norm_vec_neg_neutri));
+
+    //ANA_MSG_INFO ("tau pos: " << tau_pos_p4.Px() << "  " << tau_pos_p4.Py() << "  " << tau_pos_p4.Pz() );
+    //ANA_MSG_INFO ("tau neg: " << tau_neg_p4.Px() << "  " << tau_neg_p4.Py() << "  " << tau_neg_p4.Pz() );
+    //ANA_MSG_INFO ("tau dot: " << tau_pos_p4.Vect().Unit() * tau_neg_p4.Vect().Unit()  );
+    //ANA_MSG_INFO ("tau+ dot pi+ norm : " << tau_pos_p4.Vect().Unit() * pi_pos_p4.Vect().Unit()  );
+    //ANA_MSG_INFO ("tau- dot pi- norm : " << tau_neg_p4.Vect().Unit() * pi_neg_p4.Vect().Unit()  );
+    //ANA_MSG_INFO ("tau+ dot aneutr norm : " << tau_pos_p4.Vect().Unit() * aneutri_p4.Vect().Unit()  );
+    //ANA_MSG_INFO ("tau- dot neutri norm : " << tau_neg_p4.Vect().Unit() * neutri_p4.Vect().Unit()  );
+    //ANA_MSG_INFO ("orientation +: " << (aneutri_p4.Vect().Unit().Cross(pi_pos_p4.Vect().Unit())) * norm_vec_pos_aneutri.Unit() );
+    //ANA_MSG_INFO ("orientation -: " << (neutri_p4.Vect().Unit().Cross(pi_neg_p4.Vect().Unit())) * norm_vec_neg_neutri.Unit() );
+    //ANA_MSG_INFO ("angle neutrino pi: " << pi_neg_p4.Vect().Angle(neutri_p4.Vect()) );
+    if (angleO >= 0){
+      m_phi_CP = acos(norm_vec_pos*norm_vec_neg); //norm_vec_pos.Angle(norm_vec_neg);
+    }
+    else{
+      m_phi_CP = 2*M_PI - acos(norm_vec_pos*norm_vec_neg);
+    }
+    if (angleO_neutri >= 0){
+      m_phi_CP_neutri = acos(norm_vec_pos_aneutri*norm_vec_neg_neutri); 
+    }
+    else{
+      m_phi_CP_neutri = 2*M_PI - acos(norm_vec_pos_aneutri*norm_vec_neg_neutri);
+    }
+  }
+  //for (const xAOD::TruthParticle* tau : *truthTauParticles) {
+  //  TLorentzVector sumMomentum;
+//
+  //  for (size_t i = 0; i < tau->nChildren(); ++i) {
+  //      const xAOD::TruthParticle* decayProduct = tau->child(i);
+  //      sumMomentum += decayProduct->p4();  // Summing four-momenta
+  //  }
+  //  //sumMomentum.Boost(tau->px(),tau->py(),tau->pz());
+  //  TVector3 boostTauVector = tau->p4().BoostVector();
+  //  sumMomentum.Boost(-boostTauVector);
+  //  double dR_boost = sumMomentum.DeltaR(tau->p4());
+  //  //ANA_MSG_INFO ("in execute, charge = " << tau->charge() << ", sum dR_boost = " << dR_boost);
+  //  if (tau->charge() > 0){
+  //    m_deltaAngle_boost_pos = cos(tau->p4().Angle(sumMomentum.Vect()));
+  //    m_deltaR_boost_pos = dR_boost;
+  //    m_phi_boosted_pos = sumMomentum.Phi();
+  //    m_eta_boosted_pos = sumMomentum.Eta();
+  //  }
+  //  else{
+  //    m_deltaR_boost_neg = dR_boost;
+  //    m_deltaAngle_boost_neg = cos(tau->p4().Angle(sumMomentum.Vect()));
+  //    m_phi_boosted_neg = sumMomentum.Phi();
+  //    m_eta_boosted_neg = sumMomentum.Eta();
+  //  }
+  //}
+
+  //int ch_pion_count = 0;
+  //for(auto part: *truthParticles){
+  //  if(std::abs(part->pdgId()) ==  211) {
+  //    ch_pion_count += 1;
+  //  }
+  //}
+
+
+
+  //if(ch_pion_count == 2){
+  //  for(auto part: *truthParticles){
+  //    if(std::abs(part->pdgId()) ==  211) {
+  //      if(m_lead_pion_phi < -9999){
+  //        m_lead_pion_phi = part->phi();
+  //        m_lead_pion_eta = part->eta();
+  //      }
+  //      else{
+  //        m_sublead_pion_phi = part->phi();
+  //        m_sublead_pion_eta = part->eta();
+  //      }
+  //    }
+  //  }
+  //}
+  
+  //m_deltaR = sqrt( pow(m_lead_pion_phi - m_sublead_pion_phi, 2) + pow(m_lead_pion_eta - m_sublead_pion_eta, 2));
+
+  // Fill the event into the tree:
+  tree ("truth_tau_analysis")->Fill ();
+
+  return StatusCode::SUCCESS;
+}
+
+
+
+StatusCode MyxAODAnalysis :: finalize ()
+{
+  // This method is the mirror image of initialize(), meaning it gets
+  // called after the last event has been processed on the worker node
+  // and allows you to finish up any objects you created in
+  // initialize() before they are written to disk.  This is actually
+  // fairly rare, since this happens separately for each worker node.
+  // Most of the time you want to do your post-processing on the
+  // submission node after all your histogram outputs have been
+  // merged.
+  return StatusCode::SUCCESS;
+}

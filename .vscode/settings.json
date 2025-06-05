@@ -1,5 +1,6 @@
 {
     "cmake.sourceDirectory": "/home/padi617e/tutorial/AnalysisTutorial/source",
     "C_Cpp.intelliSenseEngine": "default",
-    "C_Cpp.default.compilerPath": "/usr/bin/g++"
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
+    "C_Cpp.errorSquiggles": "enabled",
 }
