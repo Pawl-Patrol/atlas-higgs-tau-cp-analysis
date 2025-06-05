@@ -33,7 +33,7 @@ sh.setMetaString( 'nc_tree', 'CollectionTree' )
 if dataType not in ["data", "mc"] :
     raise Exception (f"invalid data type: {dataType}")
 if dataType == 'mc':
-    testFile = os.getenv ('ALRB_TutorialData')+'/mc20_13TeV.312276.aMcAtNloPy8EG_A14N30NLO_LQd_mu_ld_0p3_beta_0p5_2ndG_M1000.deriv.DAOD_PHYS.e7587_a907_r14861_p6117/DAOD_PHYS.37791038._000001.pool.root.1'
+    testFile = '/srv/samples/mc23_13p6TeV/DAOD_PHYS.40157243._000001.pool.root.1'
 else:
     testFile = os.getenv('ASG_TEST_FILE_DATA')
 # 
@@ -60,6 +60,9 @@ alg = createAlgorithm ( 'MyxAODAnalysis', 'AnalysisAlg' )
 job.algsAdd( alg )
 
 # Later on we'll add some configuration options for our job here
+
+# Add output stream
+job.outputAdd(ROOT.EL.OutputStream('ANALYSIS'))
 
 # Run the job using the direct driver.
 driver = ROOT.EL.DirectDriver()

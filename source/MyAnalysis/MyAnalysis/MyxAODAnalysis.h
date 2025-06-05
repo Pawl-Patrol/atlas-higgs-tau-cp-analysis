@@ -8,8 +8,8 @@ class MyxAODAnalysis : public EL::AnaAlgorithm {
 private:
   unsigned int m_runNumber = 0;
   unsigned long long m_eventNumber = 0;
-  double m_phi_CP = 0.;
-  double m_phi_CP_neutri = 0.;
+  double m_phiCP = 0.;
+  double m_phiCPNeutri = 0.;
 
 public:
   // This is a standard algorithm constructor
