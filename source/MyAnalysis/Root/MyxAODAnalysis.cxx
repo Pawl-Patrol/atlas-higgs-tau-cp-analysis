@@ -26,13 +26,18 @@ StatusCode MyxAODAnalysis ::initialize() {
   // connected.
   ANA_MSG_INFO("Initializing");
 
+  // Setup histograms
+  ANA_CHECK(book(TH1F("phi_CP_tau_pi", "phi_CP_tau_pi", 50, 0, 2 * M_PI)));
+  ANA_CHECK(
+      book(TH1F("phi_CP_neutrino_pi", "phi_CP_neutrino_pi", 50, 0, 2 * M_PI)));
+
   // Setup tree
-  ANA_CHECK(book(TTree("truth_tau_analysis", "Zee analysis ntuple")));
-  TTree *myTree = tree("truth_tau_analysis");
-  myTree->Branch("run_number", &m_runNumber);
-  myTree->Branch("event_number", &m_eventNumber);
-  myTree->Branch("phi_CP_tau_pi", &m_phiCP);
-  myTree->Branch("phi_CP_neutrino_pi", &m_phiCPNeutri);
+  // ANA_CHECK(book(TTree("truth_tau_analysis", "Zee analysis ntuple")));
+  // TTree *myTree = tree("truth_tau_analysis");
+  // myTree->Branch("run_number", &m_runNumber);
+  // myTree->Branch("event_number", &m_eventNumber);
+  // myTree->Branch("phi_CP_tau_pi", &m_phiCP);
+  // myTree->Branch("phi_CP_neutrino_pi", &m_phiCPNeutri);
 
   return StatusCode::SUCCESS;
 }
@@ -108,7 +113,7 @@ StatusCode MyxAODAnalysis ::execute() {
   // technically tauCount == 1 should be impossible, but we check for it anyways
   if (tauCount != 2) {
     ANA_MSG_INFO("Tau count is not 2. Excluding event.");
-    tree("truth_tau_analysis")->Fill();
+    // tree("truth_tau_analysis")->Fill();
     return StatusCode::SUCCESS;
   }
 
@@ -125,7 +130,7 @@ StatusCode MyxAODAnalysis ::execute() {
 
   if (chPionCount != 2) {
     ANA_MSG_INFO("Charged pion count is not 2. Excluding event.");
-    tree("truth_tau_analysis")->Fill();
+    // tree("truth_tau_analysis")->Fill();
     return StatusCode::SUCCESS;
   }
 
@@ -156,7 +161,7 @@ StatusCode MyxAODAnalysis ::execute() {
 
   if (chNuTauCount != 2) {
     ANA_MSG_INFO("Charged neutrino count is not 2. Excluding event.");
-    tree("truth_tau_analysis")->Fill();
+    // tree("truth_tau_analysis")->Fill();
     return StatusCode::SUCCESS;
   }
 
@@ -176,7 +181,7 @@ StatusCode MyxAODAnalysis ::execute() {
 
   ANA_MSG_INFO("Found pi+ pi- decay");
 
-  // Boost all four-momenta to the Higgs boson rest frame
+  // Boost all four-momenta to the Higgs boson rest frame = taus CMF
   TVector3 boostVector = higgsP4.BoostVector();
   tauPosP4.Boost(-boostVector);
   tauNegP4.Boost(-boostVector);
@@ -185,16 +190,11 @@ StatusCode MyxAODAnalysis ::execute() {
   neutriP4.Boost(-boostVector);
   antiNeutriP4.Boost(-boostVector);
 
+  // Tau/Pion decay planes
   TVector3 norm_vec_pos = (tauPosP4.Vect().Cross(piPosP4.Vect())).Unit();
   TVector3 norm_vec_neg = (tauNegP4.Vect().Cross(piNegP4.Vect())).Unit();
 
-  TVector3 norm_vec_pos_aneutri =
-      (antiNeutriP4.Vect().Cross(piPosP4.Vect())).Unit();
-  TVector3 norm_vec_neg_neutri = (neutriP4.Vect().Cross(piNegP4.Vect())).Unit();
-
   double angleO = piNegP4.Vect().Unit() * (norm_vec_pos.Cross(norm_vec_neg));
-  double angleO_neutri =
-      piNegP4.Vect().Unit() * (norm_vec_pos_aneutri.Cross(norm_vec_neg_neutri));
 
   if (angleO >= 0) {
     m_phiCP = acos(norm_vec_pos * norm_vec_neg);
@@ -202,11 +202,23 @@ StatusCode MyxAODAnalysis ::execute() {
     m_phiCP = 2 * M_PI - acos(norm_vec_pos * norm_vec_neg);
   }
 
+  // Neutrino/Pion decay planes
+  TVector3 norm_vec_pos_aneutri =
+      (antiNeutriP4.Vect().Cross(piPosP4.Vect())).Unit();
+  TVector3 norm_vec_neg_neutri = (neutriP4.Vect().Cross(piNegP4.Vect())).Unit();
+
+  double angleO_neutri =
+      piNegP4.Vect().Unit() * (norm_vec_pos_aneutri.Cross(norm_vec_neg_neutri));
+
   if (angleO_neutri >= 0) {
     m_phiCPNeutri = acos(norm_vec_pos_aneutri * norm_vec_neg_neutri);
   } else {
     m_phiCPNeutri = 2 * M_PI - acos(norm_vec_pos_aneutri * norm_vec_neg_neutri);
   }
+
+  hist("phi_CP_tau_pi")->Fill(m_phiCP);
+  hist("phi_CP_neutrino_pi")->Fill(m_phiCPNeutri);
+  // tree("truth_tau_analysis")->Fill();
 
   return StatusCode::SUCCESS;
 }
