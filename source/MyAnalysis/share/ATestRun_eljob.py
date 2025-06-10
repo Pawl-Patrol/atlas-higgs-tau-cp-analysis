@@ -8,15 +8,12 @@ import os
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config-path', dest='configPath',
-        action='store', type=str,
+        action='store', type=str, required=True,
         help='Path to the directory containing samples to be processed.')
 parser.add_argument( '-s', '--submission-dir', dest='submitDir',
         action='store', type=str, default='submitDir',
         help='Submission directory for EventLoop')
 options = parser.parse_args()
-
-# data type: 'data', 'mc'
-dataType = 'mc'
 
 # Set up (Py)ROOT.
 import ROOT
@@ -29,18 +26,10 @@ sh = ROOT.SH.SampleHandler()
 # containing the EDM containers is "CollectionTree"
 sh.setMetaString( 'nc_tree', 'CollectionTree' )
 
-# Select the sample associated with the data type used
-if dataType not in ["data", "mc"] :
-    raise Exception (f"invalid data type: {dataType}")
-if dataType == 'mc':
-    testFile = '/srv/samples/mc23_13p6TeV/DAOD_PHYS.40157243._000001.pool.root.1'
-else:
-    testFile = os.getenv('ASG_TEST_FILE_DATA')
-# 
-
 # Use SampleHandler to get the sample from the defined location
 sample = ROOT.SH.SampleLocal("dataset")
-sample.add (testFile)
+for filename in os.listdir(options.configPath):
+    sample.add(os.path.join(options.configPath, filename))
 sh.add (sample)
 
 # Print information about the sample
@@ -49,7 +38,7 @@ sh.printContent()
 # Create an EventLoop job.
 job = ROOT.EL.Job()
 job.sampleHandler( sh )
-job.options().setDouble( ROOT.EL.Job.optMaxEvents, 500 )
+job.options().setDouble( ROOT.EL.Job.optMaxEvents, -1 )
 job.options().setString( ROOT.EL.Job.optSubmitDirMode, 'unique-link')
 
 # Create the algorithm's configuration.
