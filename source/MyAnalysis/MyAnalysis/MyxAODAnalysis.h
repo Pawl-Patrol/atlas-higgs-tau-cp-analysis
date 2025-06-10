@@ -10,6 +10,7 @@ private:
   unsigned long long m_eventNumber = 0;
   double m_phiCP = 0.;
   double m_phiCPNeutri = 0.;
+  double m_phiCPPion = 0.;
 
 public:
   // This is a standard algorithm constructor

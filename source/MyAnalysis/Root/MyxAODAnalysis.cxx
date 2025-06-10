@@ -30,6 +30,7 @@ StatusCode MyxAODAnalysis ::initialize() {
   ANA_CHECK(book(TH1F("phi_CP_tau_pi", "phi_CP_tau_pi", 50, 0, 2 * M_PI)));
   ANA_CHECK(
       book(TH1F("phi_CP_neutrino_pi", "phi_CP_neutrino_pi", 50, 0, 2 * M_PI)));
+  ANA_CHECK(book(TH1F("phi_CP_pion", "phi_CP_pion", 50, 0, 2 * M_PI)));
 
   // Setup tree
   // ANA_CHECK(book(TTree("truth_tau_analysis", "Zee analysis ntuple")));
@@ -40,6 +41,11 @@ StatusCode MyxAODAnalysis ::initialize() {
   // myTree->Branch("phi_CP_neutrino_pi", &m_phiCPNeutri);
 
   return StatusCode::SUCCESS;
+}
+
+TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2) {
+  TVector3 unit_vec2 = vec2.Unit();
+  return vec1 - (vec1.Dot(unit_vec2)) * unit_vec2;
 }
 
 StatusCode MyxAODAnalysis ::execute() {
@@ -81,8 +87,13 @@ StatusCode MyxAODAnalysis ::execute() {
 
   // Get Higgs particle four-momentum
   TLorentzVector higgsP4;
+  TLorentzVector higgsProdVtx = TLorentzVector(0., 0., 0., 0.);
+
   for (const xAOD::TruthParticle *higgs : *truthHiggs) {
     higgsP4 = higgs->p4();
+    if (higgs->hasProdVtx()) {
+      higgsProdVtx = higgs->prodVtx()->v4();
+    }
   }
 
   // Get tau particles and their four-momenta
@@ -120,6 +131,8 @@ StatusCode MyxAODAnalysis ::execute() {
   // Check for charged pions in the decay products of taus
   TLorentzVector piPosP4 = TLorentzVector(0., 0., 0., 0.);
   TLorentzVector piNegP4 = TLorentzVector(0., 0., 0., 0.);
+  TLorentzVector piPosProdVtx = TLorentzVector(0., 0., 0., 0.);
+  TLorentzVector piNegProdVtx = TLorentzVector(0., 0., 0., 0.);
 
   int chPionCount = 0;
   for (const xAOD::TruthParticle *part : *truthTausWithDecayParticles) {
@@ -142,9 +155,11 @@ StatusCode MyxAODAnalysis ::execute() {
 
     if (particle->pdgId() == PIPLUS && particle->parent(0)->pdgId() == -TAU) {
       piPosP4 = particle->p4();
+      piPosProdVtx = particle->prodVtx()->v4();
     }
     if (particle->pdgId() == PIMINUS && particle->parent(0)->pdgId() == TAU) {
       piNegP4 = particle->p4();
+      piNegProdVtx = particle->prodVtx()->v4();
     }
   }
 
@@ -181,14 +196,46 @@ StatusCode MyxAODAnalysis ::execute() {
 
   ANA_MSG_INFO("Found pi+ pi- decay");
 
+  // Using pion impact parameter/momentum planes
+  TLorentzVector dca_pos_pion = TLorentzVector(
+      getPerpendicularComponent(piPosProdVtx.Vect() - higgsProdVtx.Vect(),
+                                piPosP4.Vect()),
+      0.);
+  TLorentzVector dca_neg_pion = TLorentzVector(
+      getPerpendicularComponent(piNegProdVtx.Vect() - higgsProdVtx.Vect(),
+                                piNegP4.Vect()),
+      0.);
+  TLorentzVector pion_neg_p4 = TLorentzVector(piNegP4);
+
+  // Boost into CMF of the pions
+  TVector3 cmfBoostVector = (piPosP4 + piNegP4).BoostVector();
+  dca_pos_pion.Boost(-cmfBoostVector);
+  dca_neg_pion.Boost(-cmfBoostVector);
+  pion_neg_p4.Boost(-cmfBoostVector);
+
+  // Get the impact parameter component perpendicular to the momentum
+  TVector3 dca_pos_perp =
+      getPerpendicularComponent(dca_pos_pion.Vect(), piPosP4.Vect());
+  TVector3 dca_neg_perp =
+      getPerpendicularComponent(dca_neg_pion.Vect(), piNegP4.Vect());
+
+  double angleO_pion =
+      pion_neg_p4.Vect().Unit() * (dca_pos_perp.Cross(dca_neg_perp).Unit());
+
+  if (angleO_pion >= 0) {
+    m_phiCPPion = acos(dca_pos_perp.Unit() * dca_neg_perp.Unit());
+  } else {
+    m_phiCPPion = 2 * M_PI - acos(dca_pos_perp.Unit() * dca_neg_perp.Unit());
+  }
+
   // Boost all four-momenta to the Higgs boson rest frame = taus CMF
-  TVector3 boostVector = higgsP4.BoostVector();
-  tauPosP4.Boost(-boostVector);
-  tauNegP4.Boost(-boostVector);
-  piPosP4.Boost(-boostVector);
-  piNegP4.Boost(-boostVector);
-  neutriP4.Boost(-boostVector);
-  antiNeutriP4.Boost(-boostVector);
+  TVector3 higgsBoostVector = higgsP4.BoostVector();
+  tauPosP4.Boost(-higgsBoostVector);
+  tauNegP4.Boost(-higgsBoostVector);
+  piPosP4.Boost(-higgsBoostVector);
+  piNegP4.Boost(-higgsBoostVector);
+  neutriP4.Boost(-higgsBoostVector);
+  antiNeutriP4.Boost(-higgsBoostVector);
 
   // Tau/Pion decay planes
   TVector3 norm_vec_pos = (tauPosP4.Vect().Cross(piPosP4.Vect())).Unit();
@@ -218,6 +265,7 @@ StatusCode MyxAODAnalysis ::execute() {
 
   hist("phi_CP_tau_pi")->Fill(m_phiCP);
   hist("phi_CP_neutrino_pi")->Fill(m_phiCPNeutri);
+  hist("phi_CP_pion")->Fill(m_phiCPPion);
   // tree("truth_tau_analysis")->Fill();
 
   return StatusCode::SUCCESS;
