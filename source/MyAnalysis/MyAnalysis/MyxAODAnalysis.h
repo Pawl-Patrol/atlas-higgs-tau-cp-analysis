@@ -1,8 +1,18 @@
 #ifndef MyAnalysis_MyxAODAnalysis_H
 #define MyAnalysis_MyxAODAnalysis_H
 
+#include "AsgMessaging/StatusCode.h"
 #include <AnaAlgorithm/AnaAlgorithm.h>
+#include <AsgMessaging/MessageCheck.h>
+#include <Math/GenVector/LorentzVector.h>
 #include <TH1.h>
+#include <TTree.h>
+#include <TruthUtils/AtlasPID.h>
+#include <cmath>
+#include <xAODEventInfo/EventInfo.h>
+#include <xAODTruth/TruthEventContainer.h>
+#include <xAODTruth/TruthParticle.h>
+#include <xAODTruth/TruthParticleContainer.h>
 
 class MyxAODAnalysis : public EL::AnaAlgorithm {
 private:

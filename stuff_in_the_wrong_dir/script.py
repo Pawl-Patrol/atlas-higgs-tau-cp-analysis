@@ -4,16 +4,19 @@ file_even = ROOT.TFile.Open("../run/cp-even/hist-dataset.root")
 file_odd = ROOT.TFile.Open("../run/cp-odd/hist-dataset.root")
 
 histograms = {
-    "#phi_{CP} (tau, even)": file_even.Get("phi_CP_tau_pi"),
-    "#phi_{CP} (tau, odd)": file_odd.Get("phi_CP_tau_pi"),
-    "#phi_{CP} (neutrino, even)": file_even.Get("phi_CP_neutrino_pi"),
-    "#phi_{CP} (neutrino, odd)": file_odd.Get("phi_CP_neutrino_pi"),
-    # "#phi_{CP} (pion, even)": file_even.Get("phi_CP_pion"),
-    # "#phi_{CP} (pion, odd)": file_odd.Get("phi_CP_pion"),
+    # "#phi_{CP} (tau-pion, even)": file_even.Get("phi_CP_tau_pi"),
+    # "#phi_{CP} (tau-pion, odd)": file_odd.Get("phi_CP_tau_pi"),
+    # "#phi_{CP} (neutrino-pion, even)": file_even.Get("phi_CP_neutrino_pi"),
+    # "#phi_{CP} (neutrino-pion, odd)": file_odd.Get("phi_CP_neutrino_pi"),
+    "#phi_{CP} (ip-pion, even)": file_even.Get("phi_CP_pion"),
+    "#phi_{CP} (ip-pion, odd)": file_odd.Get("phi_CP_pion"),
 }
 
-for hist in histograms.values():
+for name, hist in histograms.items():
     integral = hist.Integral()
+    if integral == 0:
+        print(f"Warning: Histogram '{name}' has zero integral, skipping normalization.")
+        continue
     hist.Scale(1.0 / integral)  # Normalization
     hist.SetLineWidth(1)
     hist.SetStats(0)
