@@ -3,4 +3,5 @@
     "C_Cpp.intelliSenseEngine": "default",
     "C_Cpp.default.compilerPath": "/usr/bin/g++",
     "C_Cpp.errorSquiggles": "enabled",
+    "python.defaultInterpreterPath": "/cvmfs/atlas.cern.ch/repo/sw/software/25.2/AnalysisBaseExternals/25.2.46/InstallArea/x86_64-el9-gcc13-opt/bin/python",
 }
