@@ -35,6 +35,14 @@ parser.add_argument(
     default=500,
     help="Maximum number of events to process. Use -1 for no limit.",
 )
+parser.add_argument(
+    "-d",
+    "--debug",
+    dest="debug",
+    action="store_true",
+    default=False,
+    help="Enable debug output.",
+)
 options = parser.parse_args()
 
 # Set up (Py)ROOT.
@@ -68,6 +76,10 @@ job.options().setString(ROOT.EL.Job.optSubmitDirMode, "unique-link")
 from AnaAlgorithm.DualUseConfig import createAlgorithm
 
 alg = createAlgorithm("MyxAODAnalysis", "AnalysisAlg")
+
+# Set the algorithm output level.
+if options.debug:
+    alg.OutputLevel = ROOT.MSG.DEBUG
 
 # Add our algorithm to the job
 job.algsAdd(alg)
