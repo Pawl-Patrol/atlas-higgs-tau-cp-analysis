@@ -6,14 +6,15 @@ file_odd = ROOT.TFile.Open("../run/cp-odd/hist-dataset.root")
 histograms = {
     # "#phi_{CP} (tau-pion, even)": file_even.Get("phi_CP_tau_pi"),
     # "#phi_{CP} (tau-pion, odd)": file_odd.Get("phi_CP_tau_pi"),
-    # "#phi_{CP} (neutrino-pion, even)": file_even.Get("phi_CP_neutrino_pi"),
-    # "#phi_{CP} (neutrino-pion, odd)": file_odd.Get("phi_CP_neutrino_pi"),
-    "#phi_{CP} (ip-pion, even)": file_even.Get("phi_CP_pion"),
-    "#phi_{CP} (ip-pion, odd)": file_odd.Get("phi_CP_pion"),
+    "#phi_{CP} (neutrino-pion, even)": file_even.Get("phi_CP_neutrino_pi"),
+    "#phi_{CP} (neutrino-pion, odd)": file_odd.Get("phi_CP_neutrino_pi"),
+    # "#phi_{CP} (ip-pion, even)": file_even.Get("phi_CP_pion"),
+    # "#phi_{CP} (ip-pion, odd)": file_odd.Get("phi_CP_pion"),
 }
 
 for name, hist in histograms.items():
     integral = hist.Integral()
+    print(integral)
     if integral == 0:
         print(f"Warning: Histogram '{name}' has zero integral, skipping normalization.")
         continue
@@ -27,7 +28,7 @@ canvas.SetLeftMargin(0.15)
 global_max_y = max(map(lambda h: h.GetMaximum(), histograms.values()))
 global_min_y = min(map(lambda h: h.GetMinimum(), histograms.values()))
 
-COLORS = [ROOT.kBlue, ROOT.kRed, ROOT.kBlack, ROOT.kGreen, ROOT.kMagenta, ROOT.kCyan]
+COLORS = [ROOT.kBlue, ROOT.kBlack, ROOT.kRed, ROOT.kGreen, ROOT.kMagenta, ROOT.kCyan]
 
 for i, hist in enumerate(histograms.values()):
     if i == 0:
@@ -39,7 +40,7 @@ for i, hist in enumerate(histograms.values()):
     hist.SetLineColor(COLORS[i])
     hist.Draw("HIST" if i == 0 else "HIST SAME")
 
-legend = ROOT.TLegend(0.7, 0.7, 0.9, 0.9)
+legend = ROOT.TLegend(0.7, 0.8, 0.9, 0.9)
 for name, hist in histograms.items():
     legend.AddEntry(hist, name, "l")
 legend.Draw()

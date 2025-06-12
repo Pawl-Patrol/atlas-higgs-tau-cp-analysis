@@ -1,3 +1,3 @@
-#include <MyAnalysis/MyxAODAnalysis.h>
+#include <MyAnalysis/TruthLevelAnalysis.h>
 
-DECLARE_COMPONENT (MyxAODAnalysis)
+DECLARE_COMPONENT(TruthLevelAnalysis)

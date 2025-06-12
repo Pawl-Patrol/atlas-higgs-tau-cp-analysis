@@ -75,7 +75,7 @@ job.options().setString(ROOT.EL.Job.optSubmitDirMode, "unique-link")
 # Create the algorithm's configuration.
 from AnaAlgorithm.DualUseConfig import createAlgorithm
 
-alg = createAlgorithm("MyxAODAnalysis", "AnalysisAlg")
+alg = createAlgorithm("TruthLevelAnalysis", "AnalysisAlg")
 
 # Set the algorithm output level.
 if options.debug:

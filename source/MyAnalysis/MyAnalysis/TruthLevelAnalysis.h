@@ -1,5 +1,5 @@
-#ifndef MyAnalysis_MyxAODAnalysis_H
-#define MyAnalysis_MyxAODAnalysis_H
+#ifndef MyAnalysis_TruthLevelAnalysis_H
+#define MyAnalysis_TruthLevelAnalysis_H
 
 #include "AsgMessaging/StatusCode.h"
 #include <AnaAlgorithm/AnaAlgorithm.h>
@@ -14,7 +14,7 @@
 #include <xAODTruth/TruthParticle.h>
 #include <xAODTruth/TruthParticleContainer.h>
 
-class MyxAODAnalysis : public EL::AnaAlgorithm {
+class TruthLevelAnalysis : public EL::AnaAlgorithm {
 private:
   unsigned int m_runNumber = 0;
   unsigned long long m_eventNumber = 0;
@@ -24,7 +24,7 @@ private:
 
 public:
   // This is a standard algorithm constructor
-  MyxAODAnalysis(const std::string &name, ISvcLocator *pSvcLocator);
+  TruthLevelAnalysis(const std::string &name, ISvcLocator *pSvcLocator);
 
   // These are the functions inherited from Algorithm
   virtual StatusCode initialize() override;

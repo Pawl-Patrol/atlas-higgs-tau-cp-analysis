@@ -4,6 +4,6 @@
 // This file includes all the header files that you need to create
 // dictionaries for.
 
-#include <MyAnalysis/MyxAODAnalysis.h>
+#include <MyAnalysis/TruthLevelAnalysis.h>
 
 #endif
