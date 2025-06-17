@@ -4,5 +4,6 @@
        should be created. -->
 
   <class name="TruthLevelAnalysis" />
+  <class name="DetectorLevelAnalysis" />
    
 </lcgdict>

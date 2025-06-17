@@ -1,35 +1,33 @@
 #include "AsgMessaging/MessageCheck.h"
 #include "MyAnalysis/Observables.h"
-#include "xAODJet/JetConstituentVector.h"
+#include "xAODBase/IParticle.h"
 #include "xAODJet/JetContainer.h"
+#include "xAODTracking/TrackParticleFwd.h"
 #include "xAODTracking/TrackingPrimitives.h"
 #include "xAODTracking/VertexContainer.h"
 #include "xAODTruth/TruthParticleContainer.h"
+#include "xAODTruth/TruthVertex.h"
+#include "xAODTruth/TruthVertexContainer.h"
 #include "xAODTruth/versions/TruthVertex_v1.h"
-#include <MyAnalysis/TruthLevelAnalysis.h>
+#include <MyAnalysis/DetectorLevelAnalysis.h>
 #include <TLorentzVector.h>
+#include <xAODTracking/TrackParticle.h>
 
-TruthLevelAnalysis::TruthLevelAnalysis(const std::string &name,
-                                       ISvcLocator *pSvcLocator)
+DetectorLevelAnalysis::DetectorLevelAnalysis(const std::string &name,
+                                             ISvcLocator *pSvcLocator)
     : EL::AnaAlgorithm(name, pSvcLocator) {}
 
-StatusCode TruthLevelAnalysis::initialize() {
+StatusCode DetectorLevelAnalysis::initialize() {
   const int BINS = 50;
 
   // Setup histograms
-  ANA_CHECK(book(TH1F("phi_CP_tau_pi", "phi_CP_tau_pi", BINS, 0, 2 * M_PI)));
-  ANA_CHECK(book(
-      TH1F("phi_CP_neutrino_pi", "phi_CP_neutrino_pi", BINS, 0, 2 * M_PI)));
   ANA_CHECK(book(TH1F("phi_CP_pion", "phi_CP_pion", BINS, 0, 2 * M_PI)));
 
   return StatusCode::SUCCESS;
 }
 
-StatusCode TruthLevelAnalysis::execute() {
+StatusCode DetectorLevelAnalysis::execute() {
   m_phiCP = 0.;
-  m_phiCPNeutri = 0.;
-  m_phiCPPion = 0.;
-
   const xAOD::TruthParticleContainer *truthHiggsWithDecayParticles = nullptr;
   StatusCode result = evtStore()->retrieve(truthHiggsWithDecayParticles,
                                            "TruthBSMWithDecayParticles");
@@ -122,43 +120,26 @@ StatusCode TruthLevelAnalysis::execute() {
 
   ANA_MSG_DEBUG("Found higgs -> tau+ tau- -> pi+ pi- decay.");
 
-  // Calculate observables
-  m_phiCP = phiCP_Pion_Tau(pHiggs->p4(), pTauPos->p4(), pTauNeg->p4(),
-                           pPionPos->p4(), pPionNeg->p4());
-
-  m_phiCPNeutri =
-      phiCP_Pion_Neutrino(pHiggs->p4(), pAntiNeutrino->p4(), pNeutrino->p4(),
-                          pPionPos->p4(), pPionNeg->p4());
+  ANA_MSG_DEBUG("TauNeg prodVtx: " << pTauNeg->prodVtx()->v4().X() << " "
+                                   << pTauNeg->prodVtx()->v4().Y() << " "
+                                   << pTauNeg->prodVtx()->v4().Z());
 
   const xAOD::TruthVertexContainer *vertices = nullptr;
   ANA_CHECK(evtStore()->retrieve(vertices, "TruthPrimaryVertices"));
 
   TLorentzVector primaryVertex = TLorentzVector(0., 0., 0., 0.);
   for (const xAOD::TruthVertex *vertex : *vertices) {
-    primaryVertex = vertex->v4();
+    ANA_MSG_DEBUG("Vertex: " << vertex->v4().X() << " " << vertex->v4().Y()
+                             << " " << vertex->v4().Z());
   }
 
-  const xAOD::JetContainer *jets = nullptr;
-  ANA_CHECK(evtStore()->retrieve(jets, "InTimeAntiKt4TruthJets"));
+  m_phiCP = phiCP_Pion_ImpactParameter(
+      pPionPos->prodVtx()->v4(), pPionNeg->prodVtx()->v4(),
+      pTauNeg->prodVtx()->v4(), pPionPos->p4(), pPionNeg->p4());
 
-  for (const xAOD::Jet *jet : *jets) {
-    if (jet->isAvailable<int>("HadronConeExclExtendedTruthLabelID ")) {
-      int label = jet->auxdata<int>("HadronConeExclExtendedTruthLabelID ");
-      ANA_MSG_DEBUG("Jet HadronConeExclExtendedTruthLabelID : " << label);
-    }
-    ANA_MSG_DEBUG("Jet: " << jet->p4().X() << " " << jet->p4().Y() << " "
-                          << jet->p4().Z() << " " << jet->p4().T());
-  }
-
-  m_phiCPPion = phiCP_Pion_ImpactParameter(
-      pPionPos->prodVtx()->v4(), pPionNeg->prodVtx()->v4(), primaryVertex,
-      pPionPos->p4(), pPionNeg->p4());
-
-  hist("phi_CP_tau_pi")->Fill(m_phiCP);
-  hist("phi_CP_neutrino_pi")->Fill(m_phiCPNeutri);
-  hist("phi_CP_pion")->Fill(m_phiCPPion);
+  hist("phi_CP_pion")->Fill(m_phiCP);
 
   return StatusCode::SUCCESS;
 }
 
-StatusCode TruthLevelAnalysis ::finalize() { return StatusCode::SUCCESS; }
+StatusCode DetectorLevelAnalysis ::finalize() { return StatusCode::SUCCESS; }

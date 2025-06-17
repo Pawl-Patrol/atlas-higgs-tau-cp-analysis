@@ -6,10 +6,10 @@ file_odd = ROOT.TFile.Open("../run/cp-odd/hist-dataset.root")
 histograms = {
     # "#phi_{CP} (tau-pion, even)": file_even.Get("phi_CP_tau_pi"),
     # "#phi_{CP} (tau-pion, odd)": file_odd.Get("phi_CP_tau_pi"),
-    "#phi_{CP} (neutrino-pion, even)": file_even.Get("phi_CP_neutrino_pi"),
-    "#phi_{CP} (neutrino-pion, odd)": file_odd.Get("phi_CP_neutrino_pi"),
-    # "#phi_{CP} (ip-pion, even)": file_even.Get("phi_CP_pion"),
-    # "#phi_{CP} (ip-pion, odd)": file_odd.Get("phi_CP_pion"),
+    # "#phi_{CP} (neutrino-pion, even)": file_even.Get("phi_CP_neutrino_pi"),
+    # "#phi_{CP} (neutrino-pion, odd)": file_odd.Get("phi_CP_neutrino_pi"),
+    "#phi_{CP} (ip-pion, even)": file_even.Get("phi_CP_pion"),
+    "#phi_{CP} (ip-pion, odd)": file_odd.Get("phi_CP_pion"),
 }
 
 for name, hist in histograms.items():
