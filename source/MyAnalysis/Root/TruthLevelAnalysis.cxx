@@ -1,9 +1,8 @@
 #include "AsgMessaging/MessageCheck.h"
 #include "MyAnalysis/Observables.h"
-#include "xAODBase/IParticle.h"
-#include "xAODJet/JetConstituentVector.h"
-#include "xAODJet/JetContainer.h"
 #include "xAODTau/TauJet.h"
+#include "xAODTau/TauTrack.h"
+#include "xAODTracking/TrackParticle.h"
 #include "xAODTracking/TrackingPrimitives.h"
 #include "xAODTracking/VertexContainer.h"
 #include "xAODTruth/TruthParticleContainer.h"
@@ -12,6 +11,7 @@
 #include "xAODTruth/versions/TruthVertex_v1.h"
 #include <MyAnalysis/TruthLevelAnalysis.h>
 #include <TLorentzVector.h>
+#include <TVector3.h>
 #include <boost/date_time/constrained_value.hpp>
 #include <xAODTau/TauJetContainer.h>
 #include <xAODTruth/xAODTruthHelpers.h>
@@ -72,6 +72,8 @@ StatusCode TruthLevelAnalysis::execute() {
   const xAOD::TruthParticle *pAntiNeutrino = nullptr;
   const xAOD::TauJet *tauPosJet = nullptr;
   const xAOD::TauJet *tauNegJet = nullptr;
+  const xAOD::TrackParticle *tauPosTrack = nullptr;
+  const xAOD::TrackParticle *tauNegTrack = nullptr;
 
   TLorentzVector truthPrimaryVertex = TLorentzVector(0., 0., 0., 0.);
   TLorentzVector primaryVertex = TLorentzVector(0., 0., 0., 0.);
@@ -143,57 +145,62 @@ StatusCode TruthLevelAnalysis::execute() {
     }
   }
 
+  // Excludsion rules
   if (tauPosJet == nullptr || tauNegJet == nullptr) {
-    ANA_MSG_DEBUG("Could not find tau+ or tau- jets. Excluding event.");
+    ANA_MSG_VERBOSE("Could not find tau+ or tau- jets. Excluding event.");
     return StatusCode::SUCCESS;
   }
 
   if (tauPosJet->vertex() == nullptr || tauNegJet->vertex() == nullptr) {
-    ANA_MSG_DEBUG("Could not find tau+ or tau- vertex. Excluding event.");
+    ANA_MSG_VERBOSE("Could not find tau+ or tau- vertex. Excluding event.");
+    return StatusCode::SUCCESS;
+  }
+
+  if (tauPosJet->nTracks() != 1 || tauNegJet->nTracks() != 1) {
+    ANA_MSG_VERBOSE("Tau jets do not have exactly one track. Excluding event.");
     return StatusCode::SUCCESS;
   }
 
   if (pHiggs == nullptr) {
-    ANA_MSG_DEBUG("Higgs boson not found. Excluding event.");
+    ANA_MSG_VERBOSE("Higgs boson not found. Excluding event.");
     return StatusCode::SUCCESS;
   }
 
   if (pTauNeg == nullptr || pTauPos == nullptr || tauCount != 2) {
-    ANA_MSG_DEBUG("Could not find tau+ tau- decay products. Excluding event.");
+    ANA_MSG_VERBOSE(
+        "Could not find tau+ tau- decay products. Excluding event.");
     return StatusCode::SUCCESS;
   }
 
   if (pPionPos == nullptr || pPionNeg == nullptr || pionCount > 2) {
-    ANA_MSG_DEBUG("Could not find pi+ pi- decay products. Excluding event.");
+    ANA_MSG_VERBOSE("Could not find pi+ pi- decay products. Excluding event.");
     return StatusCode::SUCCESS;
   }
 
   if (pNeutrino == nullptr || pAntiNeutrino == nullptr || neutrinoCount > 2) {
-    ANA_MSG_DEBUG("Could not find neutrino decay products. Excluding event.");
+    ANA_MSG_VERBOSE("Could not find neutrino decay products. Excluding event.");
     return StatusCode::SUCCESS;
   }
 
   ANA_MSG_DEBUG("Found higgs -> tau+ tau- -> pi+ pi- decay.");
 
-  // Calculate observables
-  m_phiCP = phiCP_Pion_Tau(pHiggs->p4(), pTauPos->p4(), pTauNeg->p4(),
-                           pPionPos->p4(), pPionNeg->p4());
+  // Get the tracks
+  tauPosTrack = tauPosJet->track(0)->track();
+  tauNegTrack = tauNegJet->track(0)->track();
 
-  m_phiCPNeutri =
-      phiCP_Pion_Neutrino(pHiggs->p4(), pAntiNeutrino->p4(), pNeutrino->p4(),
-                          pPionPos->p4(), pPionNeg->p4());
+  if (tauPosJet->vertex() != nullptr) {
+    primaryVertex.SetXYZT(tauPosJet->vertex()->x(), tauPosJet->vertex()->y(),
+                          tauPosJet->vertex()->z(), 0);
+  }
 
-  m_phiCPPion = phiCP_Pion_ImpactParameter(
-      pPionPos->prodVtx()->v4(), pPionNeg->prodVtx()->v4(), truthPrimaryVertex,
-      pPionPos->p4(), pPionNeg->p4());
-
-  m_phiCPPionJet = phiCP_Pion_ImpactParameter(
-      pPionPos->prodVtx()->v4(), pPionNeg->prodVtx()->v4(), truthPrimaryVertex,
-      tauPosJet->p4(), tauNegJet->p4());
-
-  m_phiCPPionJetReco = phiCP_Pion_ImpactParameter(
-      pPionPos->prodVtx()->v4(), pPionNeg->prodVtx()->v4(), primaryVertex,
-      tauPosJet->p4(), tauNegJet->p4());
+  // log out primary vertices
+  ANA_MSG_DEBUG("Truth primary vertex: " << truthPrimaryVertex.X() << " "
+                                         << truthPrimaryVertex.Y() << " "
+                                         << truthPrimaryVertex.Z() << " "
+                                         << truthPrimaryVertex.T());
+  ANA_MSG_DEBUG("Primary vertex: "
+                << primaryVertex.X() << " " << primaryVertex.Y() << " "
+                << primaryVertex.Z() << " " << primaryVertex.T());
 
   // log out pion and tau momenta
   ANA_MSG_DEBUG("Tau+ P4: " << pTauPos->p4().X() << " " << pTauPos->p4().Y()
@@ -218,6 +225,30 @@ StatusCode TruthLevelAnalysis::execute() {
                                 << pTauNeg->prodVtx()->v4().Y() << " "
                                 << pTauNeg->prodVtx()->v4().Z() << " "
                                 << pTauNeg->prodVtx()->v4().T());
+
+  ANA_MSG_DEBUG("Tau+ Jet: "
+                << tauPosJet->vertex()->x() << " " << tauPosJet->vertex()->y()
+                << " " << tauPosJet->vertex()->z() << " "
+                << tauPosJet->p4().Px() << " " << tauPosJet->p4().Py() << " "
+                << tauPosJet->p4().Pz() << " " << tauPosJet->p4().E());
+
+  ANA_MSG_DEBUG("Tau- Jet: "
+                << tauNegJet->vertex()->x() << " " << tauNegJet->vertex()->y()
+                << " " << tauNegJet->vertex()->z() << " "
+                << tauNegJet->p4().Px() << " " << tauNegJet->p4().Py() << " "
+                << tauNegJet->p4().Pz() << " " << tauNegJet->p4().E());
+
+  ANA_MSG_DEBUG("Tau+ track: "
+                << tauPosTrack->d0() << " " << tauPosTrack->z0() << " "
+                << tauPosTrack->phi() << " p4 " << tauPosTrack->p4().Px() << " "
+                << tauPosTrack->p4().Py() << " " << tauPosTrack->p4().Pz()
+                << " " << tauPosTrack->p4().E());
+  ANA_MSG_DEBUG("Tau- track: "
+                << tauNegTrack->d0() << " " << tauNegTrack->z0() << " "
+                << tauNegTrack->phi() << " p4 " << tauNegTrack->p4().Px() << " "
+                << tauNegTrack->p4().Py() << " " << tauNegTrack->p4().Pz()
+                << " " << tauNegTrack->p4().E());
+
   ANA_MSG_DEBUG("Pion+ vertex: " << pPionPos->prodVtx()->v4().X() << " "
                                  << pPionPos->prodVtx()->v4().Y() << " "
                                  << pPionPos->prodVtx()->v4().Z() << " "
@@ -226,6 +257,40 @@ StatusCode TruthLevelAnalysis::execute() {
                                  << pPionNeg->prodVtx()->v4().Y() << " "
                                  << pPionNeg->prodVtx()->v4().Z() << " "
                                  << pPionNeg->prodVtx()->v4().T());
+
+  // Calculate observables
+  m_phiCP = phiCP_Pion_Tau(pHiggs->p4(), pTauPos->p4(), pTauNeg->p4(),
+                           pPionPos->p4(), pPionNeg->p4());
+
+  m_phiCPNeutri =
+      phiCP_Pion_Neutrino(pHiggs->p4(), pAntiNeutrino->p4(), pNeutrino->p4(),
+                          pPionPos->p4(), pPionNeg->p4());
+
+  // phi_CP using only truth
+  m_phiCPPion = phiCP_Pion_ImpactParameter(
+      pPionPos->prodVtx()->v4(), pPionNeg->prodVtx()->v4(), truthPrimaryVertex,
+      pPionPos->p4(), pPionNeg->p4());
+
+  // phi_CP using truth but pion track momenta
+  m_phiCPPionJet = phiCP_Pion_ImpactParameter(
+      pPionPos->prodVtx()->v4(), pPionNeg->prodVtx()->v4(), primaryVertex,
+      tauPosTrack->p4(), tauNegTrack->p4());
+
+  TLorentzVector pionVtxPos(-tauPosTrack->d0() * sin(tauPosTrack->phi0()),
+                            tauPosTrack->d0() * cos(tauPosTrack->phi0()),
+                            tauPosTrack->z0(), 0);
+  TLorentzVector pionVtxNeg(-tauNegTrack->d0() * sin(tauNegTrack->phi0()),
+                            tauNegTrack->d0() * cos(tauNegTrack->phi0()),
+                            tauNegTrack->z0(), 0);
+
+  TLorentzVector beamSpot(-0.5, -0.5, 0.0, 0.0);
+  pionVtxPos += beamSpot;
+  pionVtxNeg += beamSpot;
+
+  // phi_CP using pion track impact parameter and momenta
+  m_phiCPPionJetReco =
+      phiCP_Pion_ImpactParameter(pionVtxPos, pionVtxNeg, primaryVertex,
+                                 tauPosTrack->p4(), tauNegTrack->p4());
 
   hist("phi_CP_tau_pi")->Fill(m_phiCP);
   hist("phi_CP_neutrino_pi")->Fill(m_phiCPNeutri);

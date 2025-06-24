@@ -3,6 +3,8 @@
 
 #include <TLorentzVector.h>
 
+TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2);
+
 double phiCP_Pion_Tau(TLorentzVector higgsP4, TLorentzVector tauPosP4,
                       TLorentzVector tauNegP4, TLorentzVector piPosP4,
                       TLorentzVector piNegP4);
