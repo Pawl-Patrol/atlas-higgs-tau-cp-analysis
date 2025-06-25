@@ -1,4 +1,5 @@
 #include "MyAnalysis/Observables.h"
+#include <TVector3.h>
 
 TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2) {
   TVector3 unit_vec2 = vec2.Unit();
@@ -42,20 +43,20 @@ double phiCP_Pion_Neutrino(TLorentzVector higgsP4, TLorentzVector antiNeutriP4,
   return angleO >= 0 ? phi : 2 * M_PI - phi;
 }
 
-double phiCP_Pion_ImpactParameter(TLorentzVector pionPosProdVtx,
-                                  TLorentzVector pionNegProdVtx,
-                                  TLorentzVector tauNegProdVtx,
+double phiCP_Pion_ImpactParameter(TVector3 pionPosProdVtx,
+                                  TVector3 pionNegProdVtx,
+                                  TVector3 tauNegProdVtx,
                                   TLorentzVector pionPosP4,
                                   TLorentzVector pionNegP4) {
 
   // Using pion impact parameter/momentum planes
   TLorentzVector impactParamPos = TLorentzVector(
-      getPerpendicularComponent(pionPosProdVtx.Vect() - tauNegProdVtx.Vect(),
+      getPerpendicularComponent(pionPosProdVtx - tauNegProdVtx,
                                 pionPosP4.Vect())
           .Unit(),
       0.);
   TLorentzVector impactParamNeg = TLorentzVector(
-      getPerpendicularComponent(pionNegProdVtx.Vect() - tauNegProdVtx.Vect(),
+      getPerpendicularComponent(pionNegProdVtx - tauNegProdVtx,
                                 pionNegP4.Vect())
           .Unit(),
       0.);
