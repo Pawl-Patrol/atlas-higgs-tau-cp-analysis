@@ -43,15 +43,6 @@ parser.add_argument(
     default=False,
     help="Enable debug output.",
 )
-parser.add_argument(
-    "-w",
-    "--which",
-    dest="which",
-    action="store",
-    type=str,
-    default="truth",
-    help="Which analysis to run: 'truth' for truth-level analysis, 'detector' for detector-level analysis.",
-)
 options = parser.parse_args()
 
 # Set up (Py)ROOT.
@@ -84,12 +75,7 @@ job.options().setString(ROOT.EL.Job.optSubmitDirMode, "unique-link")
 # Create the algorithm's configuration.
 from AnaAlgorithm.DualUseConfig import createAlgorithm
 
-if options.which == "detector":
-    alg = createAlgorithm("DetectorLevelAnalysis", "AnalysisAlg")
-elif options.which == "truth":
-    alg = createAlgorithm("TruthLevelAnalysis", "AnalysisAlg")
-else:
-    raise ValueError("Invalid option for --which. Use 'truth' or 'detector'.")
+alg = createAlgorithm("TruthLevelAnalysis", "AnalysisAlg")
 
 # Set the algorithm output level.
 if options.debug:
