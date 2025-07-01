@@ -1,10 +1,13 @@
 #include "AsgMessaging/MessageCheck.h"
 #include "MyAnalysis/Observables.h"
+#include "TruthUtils/AtlasPID.h"
 #include "xAODTau/TauJet.h"
 #include "xAODTau/TauTrack.h"
 #include "xAODTracking/TrackParticle.h"
+#include "xAODTracking/TrackingPrimitives.h"
 #include "xAODTracking/VertexContainer.h"
 #include "xAODTruth/TruthParticleContainer.h"
+#include "xAODTruth/TruthParticleFwd.h"
 #include "xAODTruth/TruthVertexContainerFwd.h"
 #include "xAODTruth/TruthVertexFwd.h"
 #include "xAODTruth/versions/TruthVertex_v1.h"
@@ -17,6 +20,10 @@
 #include <xAODTau/TauJetContainer.h>
 #include <xAODTruth/xAODTruthHelpers.h>
 
+// static const int RHOPLUS = 213;
+// static const int RHOMINUS = -213;
+// static const int RHO0 = 113;
+
 TruthLevelAnalysis::TruthLevelAnalysis(const std::string &name,
                                        ISvcLocator *pSvcLocator)
     : EL::AnaAlgorithm(name, pSvcLocator) {}
@@ -25,9 +32,6 @@ StatusCode TruthLevelAnalysis::initialize() {
   const int BINS = 50;
 
   // Setup histograms
-  ANA_CHECK(book(TH1F("phi_CP_tau_pi", "phi_CP_tau_pi", BINS, 0, 2 * M_PI)));
-  ANA_CHECK(book(
-      TH1F("phi_CP_neutrino_pi", "phi_CP_neutrino_pi", BINS, 0, 2 * M_PI)));
   ANA_CHECK(book(TH1F("phi_CP_pion", "phi_CP_pion", BINS, 0, 2 * M_PI)));
   ANA_CHECK(
       book(TH1F("phi_CP_pion_jet", "phi_CP_pion_jet", BINS, 0, 2 * M_PI)));
@@ -39,8 +43,6 @@ StatusCode TruthLevelAnalysis::initialize() {
 
 StatusCode TruthLevelAnalysis::execute() {
 
-  m_phiCP = NAN;
-  m_phiCPNeutri = NAN;
   m_phiCPPion = NAN;
   m_phiCPPionJet = NAN;
   m_phiCPPionJetReco = NAN;
@@ -59,8 +61,8 @@ StatusCode TruthLevelAnalysis::execute() {
   const xAOD::TruthParticle *pTauNeg = nullptr;
   const xAOD::TruthParticle *pPionPos = nullptr;
   const xAOD::TruthParticle *pPionNeg = nullptr;
-  const xAOD::TruthParticle *pNeutrino = nullptr;
-  const xAOD::TruthParticle *pAntiNeutrino = nullptr;
+  const xAOD::TruthParticle *pLepton = nullptr;
+  const xAOD::TruthParticle *pPosition = nullptr;
   // Pointers to tau jets
   const xAOD::TauJet *tauPosJet = nullptr;
   const xAOD::TauJet *tauNegJet = nullptr;
@@ -81,14 +83,10 @@ StatusCode TruthLevelAnalysis::execute() {
   ANA_CHECK(evtStore()->retrieve(truthVertices, "TruthPrimaryVertices"));
   ANA_CHECK(evtStore()->retrieve(vertices, "PrimaryVertices"));
 
-  TVector3 truthPrimaryVertex(0., 0., 0.);
-  TVector3 tauJetProductionVertex(0., 0., 0.);
   TVector3 beamSpot(eventInfo->beamPosX(), eventInfo->beamPosY(),
                     eventInfo->beamPosZ());
 
   int tauCount = 0;
-  int pionCount = 0;
-  int neutrinoCount = 0;
 
   for (const xAOD::TruthParticle *particle : *truthHiggsWithDecayParticles) {
     if (particle->nParents() == 0) {
@@ -105,51 +103,6 @@ StatusCode TruthLevelAnalysis::execute() {
     }
   }
 
-  for (const xAOD::TruthParticle *particle : *truthTausWithDecayParticles) {
-    // Skip tauons
-    if (particle->nParents() == 0) {
-      continue;
-    }
-
-    // Pions
-    if (particle->pdgId() == PI0) {
-      pionCount++;
-    } else if (particle->pdgId() == PIPLUS &&
-               particle->parent(0)->pdgId() == -TAU) {
-      pPionPos = particle;
-      pionCount++;
-    } else if (particle->pdgId() == PIMINUS &&
-               particle->parent(0)->pdgId() == TAU) {
-      pPionNeg = particle;
-      pionCount++;
-    }
-
-    // Neutrinos
-    else if (particle->pdgId() == -NU_TAU &&
-             particle->parent(0)->pdgId() == -TAU) {
-      pAntiNeutrino = particle;
-      neutrinoCount++;
-    } else if (particle->pdgId() == NU_TAU &&
-               particle->parent(0)->pdgId() == TAU) {
-      pNeutrino = particle;
-      neutrinoCount++;
-    }
-
-    ANA_MSG_DEBUG("Found tau decay particle: " << particle->pdgId());
-  }
-
-  for (const xAOD::TauJet *tauJet : *tauJets) {
-    if (tauJet->charge() > 0) {
-      tauPosJet = tauJet;
-    } else if (tauJet->charge() < 0) {
-      tauNegJet = tauJet;
-    }
-  }
-
-  for (const xAOD::TruthVertex *vertex : *truthVertices) {
-    truthPrimaryVertex = vertex->v4().Vect();
-  }
-
   // Exclusion rules
   if (pHiggs == nullptr) {
     ANA_MSG_VERBOSE("Higgs boson not found. Excluding event.");
@@ -162,14 +115,94 @@ StatusCode TruthLevelAnalysis::execute() {
     return StatusCode::SUCCESS;
   }
 
-  if (pPionPos == nullptr || pPionNeg == nullptr || pionCount > 2) {
-    ANA_MSG_VERBOSE("Could not find pi+ pi- decay products. Excluding event.");
+  int tauPosLeptonCount = 0;
+  int tauNegLeptonCount = 0;
+  int tauPosPionZeroCount = 0;
+  int tauNegPionZeroCount = 0;
+  int tauPosPionChargedCount = 0;
+  int tauNegPionChargedCount = 0;
+  int tauPosNeutrinoCount = 0;
+  int tauNegNeutrinoCount = 0;
+
+  for (const xAOD::TruthParticle *particle : *truthTausWithDecayParticles) {
+    // Skip tauons
+    if (particle->nParents() == 0) {
+      continue;
+    }
+
+    // Tau-
+    if (particle->parent(0)->pdgId() == TAU) {
+      switch (particle->pdgId()) {
+      case PIPLUS:
+        pPionPos = particle;
+        tauNegPionChargedCount++;
+        break;
+      case PIMINUS:
+        pPionNeg = particle;
+        tauNegPionChargedCount++;
+        break;
+      case PI0:
+        tauNegPionZeroCount++;
+        break;
+      case ELECTRON:
+      case MUON:
+        pLepton = particle;
+        tauNegLeptonCount++;
+        break;
+      case NU_TAU:
+      case -NU_TAU:
+        tauNegNeutrinoCount++;
+        break;
+      }
+    }
+
+    // Tau+
+    else if (particle->parent(0)->pdgId() == -TAU) {
+      switch (particle->pdgId()) {
+      case PIPLUS:
+        pPionPos = particle;
+        tauPosPionChargedCount++;
+        break;
+      case PIMINUS:
+        pPionNeg = particle;
+        tauPosPionChargedCount++;
+        break;
+      case PI0:
+        tauPosPionZeroCount++;
+        break;
+      case POSITRON:
+      case -MUON:
+        pPosition = particle;
+        tauPosLeptonCount++;
+        break;
+      case NU_TAU:
+      case -NU_TAU:
+        tauPosNeutrinoCount++;
+        break;
+      }
+    }
+  }
+
+  TauDecayMode tauNegDecayMode =
+      inferTauDecayMode(tauNegLeptonCount, tauNegPionChargedCount,
+                        tauNegPionZeroCount, tauNegNeutrinoCount);
+  TauDecayMode tauPosDecayMode =
+      inferTauDecayMode(tauPosLeptonCount, tauPosPionChargedCount,
+                        tauPosPionZeroCount, tauPosNeutrinoCount);
+
+  if (tauNegDecayMode != TauDecayMode::HADRONIC_1P0N ||
+      tauPosDecayMode != TauDecayMode::HADRONIC_1P0N) {
+    ANA_MSG_VERBOSE(
+        "Could not identify tau+ tau- decay products. Excluding event.");
     return StatusCode::SUCCESS;
   }
 
-  if (pNeutrino == nullptr || pAntiNeutrino == nullptr || neutrinoCount > 2) {
-    ANA_MSG_VERBOSE("Could not find neutrino decay products. Excluding event.");
-    return StatusCode::SUCCESS;
+  for (const xAOD::TauJet *tauJet : *tauJets) {
+    if (tauJet->charge() > 0) {
+      tauPosJet = tauJet;
+    } else if (tauJet->charge() < 0) {
+      tauNegJet = tauJet;
+    }
   }
 
   if (tauPosJet == nullptr || tauNegJet == nullptr) {
@@ -184,48 +217,34 @@ StatusCode TruthLevelAnalysis::execute() {
 
   if (tauPosJet->nTracks() != 1 || tauNegJet->nTracks() != 1) {
     ANA_MSG_VERBOSE("Tau jets do not have exactly one track. Excluding event.");
-    for (auto track : tauPosJet->tracks()) {
-      ANA_MSG_DEBUG("Tau+ track mass: " << track->track()->p4().M());
-    }
     return StatusCode::SUCCESS;
   }
 
   ANA_MSG_DEBUG("Found higgs -> tau+ tau- -> pi+ pi- decay.");
 
   // Truth level phi_CP
-  m_phiCP = phiCP_Pion_Tau(pHiggs->p4(), pTauPos->p4(), pTauNeg->p4(),
-                           pPionPos->p4(), pPionNeg->p4());
-
-  m_phiCPNeutri =
-      phiCP_Pion_Neutrino(pHiggs->p4(), pAntiNeutrino->p4(), pNeutrino->p4(),
-                          pPionPos->p4(), pPionNeg->p4());
-
   m_phiCPPion = phiCP_Pion_ImpactParameter(
       pPionPos->prodVtx()->v4().Vect(), pPionNeg->prodVtx()->v4().Vect(),
-      truthPrimaryVertex, pPionPos->p4(), pPionNeg->p4());
+      pTauPos->prodVtx()->v4().Vect(), pTauNeg->prodVtx()->v4().Vect(),
+      pPionPos->p4(), pPionNeg->p4());
 
   // Get the tracks
   const xAOD::TrackParticle *tauPosTrack = tauPosJet->track(0)->track();
   const xAOD::TrackParticle *tauNegTrack = tauNegJet->track(0)->track();
 
-  tauJetProductionVertex.SetXYZ(tauPosJet->vertex()->x(),
-                                tauPosJet->vertex()->y(),
-                                tauPosJet->vertex()->z());
-
   TVector3 pionVtxPos = calculatePionTrackVertex(tauPosTrack, beamSpot);
   TVector3 pionVtxNeg = calculatePionTrackVertex(tauNegTrack, beamSpot);
 
   // phi_CP using tracks and truth/reconstructed vertices
-  m_phiCPPionJet =
-      phiCP_Pion_ImpactParameter(pionVtxPos, pionVtxNeg, truthPrimaryVertex,
-                                 tauPosTrack->p4(), tauNegTrack->p4());
+  m_phiCPPionJet = phiCP_Pion_ImpactParameter(
+      pionVtxPos, pionVtxNeg, pTauPos->prodVtx()->v4().Vect(),
+      pTauNeg->prodVtx()->v4().Vect(), tauPosTrack->p4(), tauNegTrack->p4());
 
-  m_phiCPPionJetReco =
-      phiCP_Pion_ImpactParameter(pionVtxPos, pionVtxNeg, tauJetProductionVertex,
-                                 tauPosTrack->p4(), tauNegTrack->p4());
+  m_phiCPPionJetReco = phiCP_Pion_ImpactParameter(
+      pionVtxPos, pionVtxNeg, GetVertexVector(tauPosJet->vertex()),
+      GetVertexVector(tauNegJet->vertex()), tauPosTrack->p4(),
+      tauNegTrack->p4());
 
-  hist("phi_CP_tau_pi")->Fill(m_phiCP);
-  hist("phi_CP_neutrino_pi")->Fill(m_phiCPNeutri);
   hist("phi_CP_pion")->Fill(m_phiCPPion);
   hist("phi_CP_pion_jet")->Fill(m_phiCPPionJet);
   hist("phi_CP_pion_jet_reco")->Fill(m_phiCPPionJetReco);

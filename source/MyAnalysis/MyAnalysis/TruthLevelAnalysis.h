@@ -14,8 +14,6 @@
 
 class TruthLevelAnalysis : public EL::AnaAlgorithm {
 private:
-  double m_phiCP = 0.;
-  double m_phiCPNeutri = 0.;
   double m_phiCPPion = 0.;
   double m_phiCPPionJet = 0.;
   double m_phiCPPionJetReco = 0.;

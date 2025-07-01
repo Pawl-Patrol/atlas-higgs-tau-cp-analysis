@@ -3,6 +3,7 @@
 
 #include <TLorentzVector.h>
 
+TVector3 getTransverseComponent(const TVector3 &vec1, const TVector3 &vec2);
 TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2);
 
 double phiCP_Pion_Tau(TLorentzVector higgsP4, TLorentzVector tauPosP4,
@@ -13,10 +14,9 @@ double phiCP_Pion_Neutrino(TLorentzVector higgsP4, TLorentzVector antiNeutriP4,
                            TLorentzVector neutriP4, TLorentzVector piPosP4,
                            TLorentzVector piNegP4);
 
-double phiCP_Pion_ImpactParameter(TVector3 pionPosProdVtx,
-                                  TVector3 pionNegProdVtx,
-                                  TVector3 tauNegProdVtx,
-                                  TLorentzVector pionPosP4,
-                                  TLorentzVector pionNegP4);
+double
+phiCP_Pion_ImpactParameter(TVector3 pionPosProdVtx, TVector3 pionNegProdVtx,
+                           TVector3 tauNegProdVtx, TVector3 tauPosProdVtx,
+                           TLorentzVector pionPosP4, TLorentzVector pionNegP4);
 
 #endif
