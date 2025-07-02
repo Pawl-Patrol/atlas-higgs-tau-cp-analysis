@@ -1,15 +1,7 @@
 #include "MyAnalysis/Observables.h"
+#include "MyAnalysis/Utils.h"
 #include <TLorentzVector.h>
 #include <TVector3.h>
-
-TVector3 getTransverseComponent(const TVector3 &vec1, const TVector3 &vec2) {
-  TVector3 unit_vec2 = vec2.Unit();
-  return vec1.Dot(unit_vec2) * unit_vec2;
-}
-
-TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2) {
-  return vec1 - getTransverseComponent(vec1, vec2);
-}
 
 double phiCP_Pion_Tau(TLorentzVector higgsP4, TLorentzVector tauPosP4,
                       TLorentzVector tauNegP4, TLorentzVector piPosP4,
@@ -48,22 +40,16 @@ double phiCP_Pion_Neutrino(TLorentzVector higgsP4, TLorentzVector antiNeutriP4,
   return angleO >= 0 ? phi : 2 * M_PI - phi;
 }
 
-double
-phiCP_Pion_ImpactParameter(TVector3 pionPosProdVtx, TVector3 pionNegProdVtx,
-                           TVector3 tauNegProdVtx, TVector3 tauPosProdVtx,
-                           TLorentzVector pionPosP4, TLorentzVector pionNegP4) {
+double phiCP_ImpactParameter(TVector3 pionPosImpactParam,
+                             TVector3 pionNegImpactParam,
+                             TLorentzVector pionPosP4,
+                             TLorentzVector pionNegP4) {
 
   // Using pion impact parameter/momentum planes
   TLorentzVector impactParamPos =
-      TLorentzVector(getPerpendicularComponent(pionPosProdVtx - tauPosProdVtx,
-                                               pionPosP4.Vect())
-                         .Unit(),
-                     0.);
+      TLorentzVector(pionPosImpactParam.Unit(), 0.0);
   TLorentzVector impactParamNeg =
-      TLorentzVector(getPerpendicularComponent(pionNegProdVtx - tauNegProdVtx,
-                                               pionNegP4.Vect())
-                         .Unit(),
-                     0.);
+      TLorentzVector(pionNegImpactParam.Unit(), 0.0);
 
   // Boost into CMF of the pions
   TVector3 cmfBoostVector = (pionPosP4 + pionNegP4).BoostVector();

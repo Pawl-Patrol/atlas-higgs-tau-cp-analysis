@@ -1,17 +1,17 @@
 import ROOT
 
-file_even = ROOT.TFile.Open("../run/cp-even/hist-dataset.root")
-file_odd = ROOT.TFile.Open("../run/cp-odd/hist-dataset.root")
+file_even = ROOT.TFile.Open("../run/cp-even-hadhad/hist-dataset.root")
+file_odd = ROOT.TFile.Open("../run/cp-odd-hadlep/hist-dataset.root")
 
 histograms = {
     # "#phi_{CP} (tau-pion, even)": file_even.Get("phi_CP_tau_pi"),
     # "#phi_{CP} (tau-pion, odd)": file_odd.Get("phi_CP_tau_pi"),
     # "#phi_{CP} (neutrino-pion, even)": file_even.Get("phi_CP_neutrino_pi"),
     # "#phi_{CP} (neutrino-pion, odd)": file_odd.Get("phi_CP_neutrino_pi"),
-    # "#phi_{CP} (ip-pion, even)": file_even.Get("phi_CP_pion"),
+    "#phi_{CP} (ip-pion, even)": file_even.Get("phi_CP_pion"),
     # "#phi_{CP} (ip-pion, odd)": file_odd.Get("phi_CP_pion"),
-    "#phi_{CP} (ip-pion-jets, even)": file_even.Get("phi_CP_pion_jet"),
-    "#phi_{CP} (ip-pion-jets, odd)": file_odd.Get("phi_CP_pion_jet"),
+    # "#phi_{CP} (ip-pion-jets, even)": file_even.Get("phi_CP_pion_jet"),
+    # "#phi_{CP} (ip-pion-jets, odd)": file_odd.Get("phi_CP_pion_jet"),
     # "#phi_{CP} (ip-pion-jets-vertex, even)": file_even.Get("phi_CP_pion_jet_reco"),
     # "#phi_{CP} (ip-pion-jets-vertex, odd)": file_odd.Get("phi_CP_pion_jet_reco"),
 }

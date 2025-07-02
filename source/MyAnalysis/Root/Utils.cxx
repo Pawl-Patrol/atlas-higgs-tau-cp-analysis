@@ -1,36 +1,99 @@
+#include "xAODEgamma/ElectronContainer.h"
+#include "xAODTau/TauJet.h"
+#include "xAODTau/TauJetContainer.h"
 #include <MyAnalysis/Utils.h>
+#include <TVector3.h>
 
-TVector3 calculatePionTrackVertex(const xAOD::TrackParticle *track,
-                                  const TVector3 &beamSpot) {
-  return beamSpot + TVector3(-(track->d0()) * sin(track->phi0()),
-                             (track->d0()) * cos(track->phi0()), track->z0());
+TVector3 getTransverseComponent(const TVector3 &vec1, const TVector3 &vec2) {
+  TVector3 unit_vec2 = vec2.Unit();
+  return vec1.Dot(unit_vec2) * unit_vec2;
+}
+
+TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2) {
+  return vec1 - getTransverseComponent(vec1, vec2);
+}
+
+TVector3 calculateImpactParameter(const TVector3 &trackVtx,
+                                  const TVector3 &trackDirection,
+                                  const TVector3 &primaryVertex) {
+  return getPerpendicularComponent(trackVtx - primaryVertex, trackDirection);
+}
+
+TVector3 calculateTrackImpactParameter(const xAOD::TrackParticle *track,
+                                       const TVector3 &primaryVertex,
+                                       const TVector3 &beamSpot) {
+  TVector3 trackPos =
+      beamSpot + TVector3(-track->d0() * sin(track->phi0()),
+                          track->d0() * cos(track->phi0()), track->z0());
+  return calculateImpactParameter(trackPos, track->p4().Vect(), primaryVertex);
 }
 
 TauDecayMode inferTauDecayMode(int nLepton, int nPionCharged, int nPionZero,
                                int nNeutrino) {
   if (nLepton == 1 && nPionCharged == 0 && nPionZero == 0 && nNeutrino == 2) {
-    return TauDecayMode::LEPTONIC;
+    return LEPTONIC;
   }
 
   if (nLepton == 0 && nPionCharged == 1 && nPionZero == 0 && nNeutrino == 1) {
-    return TauDecayMode::HADRONIC_1P0N;
+    return HADRONIC_1P0N;
   }
 
   if (nLepton == 0 && nPionCharged == 1 && nPionZero == 1 && nNeutrino == 1) {
-    return TauDecayMode::HADRONIC_1P1N;
+    return HADRONIC_1P1N;
   }
 
   if (nLepton == 0 && nPionCharged == 1 && nPionZero >= 2 && nNeutrino == 1) {
-    return TauDecayMode::HADRONIC_1PXN;
+    return HADRONIC_1PXN;
   }
 
   if (nLepton == 0 && nPionCharged == 3 && nPionZero == 0 && nNeutrino == 0) {
-    return TauDecayMode::HADRONIC_3P0N;
+    return HADRONIC_3P0N;
   }
 
-  return TauDecayMode::UNKNOWN;
+  return UNKNOWN;
 }
 
 TVector3 GetVertexVector(const xAOD::Vertex *vertex) {
   return TVector3(vertex->x(), vertex->y(), vertex->z());
+}
+
+const xAOD::TauJet *GetLeadingJet(const xAOD::TauJetContainer *jets,
+                                  bool positive) {
+  const xAOD::TauJet *leadingJet = nullptr;
+  for (const xAOD::TauJet *jet : *jets) {
+    if ((jet->charge() <= 0 && positive) || (jet->charge() >= 0 && !positive)) {
+      continue;
+    }
+
+    if (jet->nTracks() == 0) {
+      continue; // Skip jets without tracks
+    }
+
+    if (leadingJet == nullptr || jet->pt() > leadingJet->pt()) {
+      leadingJet = jet;
+    }
+  }
+
+  return leadingJet;
+}
+
+const xAOD::Electron *
+GetLeadingElectron(const xAOD::ElectronContainer *electrons, bool positive) {
+  const xAOD::Electron *leading = nullptr;
+  for (const xAOD::Electron *electron : *electrons) {
+    if ((electron->charge() <= 0 && positive) ||
+        (electron->charge() >= 0 && !positive)) {
+      continue;
+    }
+
+    if (electron->nTrackParticles() == 0) {
+      continue; // Skip electrons without tracks
+    }
+
+    if (leading == nullptr || electron->pt() > leading->pt()) {
+      leading = electron;
+    }
+  }
+
+  return leading;
 }

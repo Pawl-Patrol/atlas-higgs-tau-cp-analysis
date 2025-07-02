@@ -5,7 +5,7 @@ atlas_subdir (MyAnalysis)
 atlas_add_library (MyAnalysisLib
   MyAnalysis/*.h Root/*.cxx
   PUBLIC_HEADERS MyAnalysis
-  LINK_LIBRARIES AnaAlgorithmLib xAODEventInfo xAODTruth xAODTracking xAODJet xAODTau TruthUtils)
+  LINK_LIBRARIES AnaAlgorithmLib xAODEventInfo xAODTruth xAODTracking xAODJet xAODTau xAODEgamma TruthUtils)
 
 if (XAOD_STANDALONE)
  # Add the dictionary:
