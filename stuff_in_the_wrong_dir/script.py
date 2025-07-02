@@ -10,9 +10,9 @@ histograms = {
     # "#phi_{CP} (neutrino-pion, odd)": file_odd.Get("phi_CP_neutrino_pi"),
     "#phi_{CP} (ip-pion, even)": file_even.Get("phi_CP_pion"),
     # "#phi_{CP} (ip-pion, odd)": file_odd.Get("phi_CP_pion"),
-    # "#phi_{CP} (ip-pion-jets, even)": file_even.Get("phi_CP_pion_jet"),
+    "#phi_{CP} (ip-pion-jets, even)": file_even.Get("phi_CP_pion_jet"),
     # "#phi_{CP} (ip-pion-jets, odd)": file_odd.Get("phi_CP_pion_jet"),
-    # "#phi_{CP} (ip-pion-jets-vertex, even)": file_even.Get("phi_CP_pion_jet_reco"),
+    "#phi_{CP} (ip-pion-jets-vertex, even)": file_even.Get("phi_CP_pion_jet_reco"),
     # "#phi_{CP} (ip-pion-jets-vertex, odd)": file_odd.Get("phi_CP_pion_jet_reco"),
 }
 

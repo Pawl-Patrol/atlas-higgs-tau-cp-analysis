@@ -228,22 +228,8 @@ StatusCode TruthLevelAnalysis::execute() {
 
   if (tauNegDecayMode == TauDecayMode::HADRONIC_1P0N &&
       tauPosDecayMode == TauDecayMode::HADRONIC_1P0N) {
-    // if (tauJets->size() != 2) {
-    //   ANA_MSG_VERBOSE("TauJets size is not 2, but " << tauJets->size()
-    //                                                 << ". Excluding event.");
-    //   return StatusCode::SUCCESS;
-    // }
-
-    const xAOD::TauJet *tauPosJet = nullptr;
-    const xAOD::TauJet *tauNegJet = nullptr;
-
-    for (const xAOD::TauJet *tauJet : *tauJets) {
-      if (tauJet->charge() > 0) {
-        tauPosJet = tauJet;
-      } else if (tauJet->charge() < 0) {
-        tauNegJet = tauJet;
-      }
-    }
+    const xAOD::TauJet *tauPosJet = GetLeadingJet(tauJets, true);
+    const xAOD::TauJet *tauNegJet = GetLeadingJet(tauJets, false);
 
     if (tauPosJet == nullptr || tauNegJet == nullptr) {
       ANA_MSG_VERBOSE("Could not find tau+ or tau- jets. Excluding event.");
