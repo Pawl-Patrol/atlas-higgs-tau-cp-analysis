@@ -13,6 +13,6 @@ double phiCP_Pion_Neutrino(TLorentzVector higgsP4, TLorentzVector antiNeutriP4,
 
 double phiCP_ImpactParameter(TVector3 pionPosImpactParam,
                              TVector3 pionNegImpactParam,
-                             TLorentzVector pionPosP4,
-                             TLorentzVector pionNegP4);
+                             TLorentzVector pionPosP4, TLorentzVector pionNegP4,
+                             TLorentzVector referenceFrame);
 #endif

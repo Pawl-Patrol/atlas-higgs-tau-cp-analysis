@@ -43,7 +43,8 @@ double phiCP_Pion_Neutrino(TLorentzVector higgsP4, TLorentzVector antiNeutriP4,
 double phiCP_ImpactParameter(TVector3 pionPosImpactParam,
                              TVector3 pionNegImpactParam,
                              TLorentzVector pionPosP4,
-                             TLorentzVector pionNegP4) {
+                             TLorentzVector pionNegP4,
+                            TLorentzVector referenceFrame) {
 
   // Using pion impact parameter/momentum planes
   TLorentzVector impactParamPos =
@@ -52,7 +53,7 @@ double phiCP_ImpactParameter(TVector3 pionPosImpactParam,
       TLorentzVector(pionNegImpactParam.Unit(), 0.0);
 
   // Boost into CMF of the pions
-  TVector3 cmfBoostVector = (pionPosP4 + pionNegP4).BoostVector();
+  TVector3 cmfBoostVector = referenceFrame.BoostVector();
   impactParamPos.Boost(-cmfBoostVector);
   impactParamNeg.Boost(-cmfBoostVector);
   pionPosP4.Boost(-cmfBoostVector);

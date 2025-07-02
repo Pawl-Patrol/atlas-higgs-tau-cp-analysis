@@ -249,8 +249,9 @@ StatusCode TruthLevelAnalysis::execute() {
     TVector3 imParamNeg = calculateImpactParameter(
         pPionNeg->prodVtx()->v4().Vect(), pPionNeg->p4().Vect(),
         pTauNeg->prodVtx()->v4().Vect());
-    m_phiCPPion = phiCP_ImpactParameter(imParamPos, imParamNeg, pPionPos->p4(),
-                                        pPionNeg->p4());
+    m_phiCPPion =
+        phiCP_ImpactParameter(imParamPos, imParamNeg, pPionPos->p4(),
+                              pPionNeg->p4(), pPionPos->p4() + pPionNeg->p4());
 
     const xAOD::TrackParticle *tauPosTrack = tauPosJet->track(0)->track();
     const xAOD::TrackParticle *tauNegTrack = tauNegJet->track(0)->track();
@@ -259,16 +260,17 @@ StatusCode TruthLevelAnalysis::execute() {
         tauPosTrack, pTauPos->prodVtx()->v4().Vect(), beamSpot);
     TVector3 pionNegImParamTruth = calculateTrackImpactParameter(
         tauNegTrack, pTauNeg->prodVtx()->v4().Vect(), beamSpot);
-    m_phiCPPionJet =
-        phiCP_ImpactParameter(pionPosImParamTruth, pionNegImParamTruth,
-                              tauPosTrack->p4(), tauNegTrack->p4());
+    m_phiCPPionJet = phiCP_ImpactParameter(
+        pionPosImParamTruth, pionNegImParamTruth, tauPosTrack->p4(),
+        tauNegTrack->p4(), pPionPos->p4() + pPionNeg->p4());
 
     TVector3 pionPosImParam = calculateTrackImpactParameter(
         tauPosTrack, GetVertexVector(tauPosJet->vertex()), beamSpot);
     TVector3 pionNegImParam = calculateTrackImpactParameter(
         tauNegTrack, GetVertexVector(tauNegJet->vertex()), beamSpot);
     m_phiCPPionJetReco = phiCP_ImpactParameter(
-        pionPosImParam, pionNegImParam, tauPosTrack->p4(), tauNegTrack->p4());
+        pionPosImParam, pionNegImParam, tauPosTrack->p4(), tauNegTrack->p4(),
+        pPionPos->p4() + pPionNeg->p4());
   } else if (tauNegDecayMode == TauDecayMode::LEPTONIC &&
              tauPosDecayMode == TauDecayMode::HADRONIC_1P0N) {
     const xAOD::TauJet *tauPosJet = GetLeadingJet(tauJets, true);
@@ -294,7 +296,8 @@ StatusCode TruthLevelAnalysis::execute() {
         pLeptonNeg->prodVtx()->v4().Vect(), pLeptonNeg->p4().Vect(),
         pTauNeg->prodVtx()->v4().Vect());
     m_phiCPPion = phiCP_ImpactParameter(imParamPos, imParamNeg, pPionPos->p4(),
-                                        pLeptonNeg->p4());
+                                        pLeptonNeg->p4(),
+                                        pLeptonPos->p4() + pLeptonNeg->p4());
 
     const xAOD::TrackParticle *tauPosTrack = tauPosJet->track(0)->track();
     const xAOD::TrackParticle *tauNegTrack = electron->trackParticle(0);
@@ -303,16 +306,17 @@ StatusCode TruthLevelAnalysis::execute() {
         tauPosTrack, pTauPos->prodVtx()->v4().Vect(), beamSpot);
     TVector3 pionNegImParamTruth = calculateTrackImpactParameter(
         tauNegTrack, pTauNeg->prodVtx()->v4().Vect(), beamSpot);
-    m_phiCPPionJet =
-        phiCP_ImpactParameter(pionPosImParamTruth, pionNegImParamTruth,
-                              tauPosTrack->p4(), tauNegTrack->p4());
+    m_phiCPPionJet = phiCP_ImpactParameter(
+        pionPosImParamTruth, pionNegImParamTruth, tauPosTrack->p4(),
+        tauNegTrack->p4(), tauPosJet->p4() + electron->p4());
 
     TVector3 pionPosImParam =
         calculateTrackImpactParameter(tauPosTrack, primaryVertex, beamSpot);
     TVector3 pionNegImParam =
         calculateTrackImpactParameter(tauNegTrack, primaryVertex, beamSpot);
     m_phiCPPionJetReco = phiCP_ImpactParameter(
-        pionPosImParam, pionNegImParam, tauPosTrack->p4(), tauNegTrack->p4());
+        pionPosImParam, pionNegImParam, tauPosTrack->p4(), tauNegTrack->p4(),
+        tauPosJet->p4() + electron->p4());
   } else if (tauNegDecayMode == TauDecayMode::HADRONIC_1P0N &&
              tauPosDecayMode == TauDecayMode::LEPTONIC) {
     ANA_MSG_DEBUG("Found higgs -> tau+ tau- -> lepton+ pion- decay");
