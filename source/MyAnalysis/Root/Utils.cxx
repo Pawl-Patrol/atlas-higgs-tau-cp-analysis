@@ -3,10 +3,10 @@
 #include "xAODTau/TauJetContainer.h"
 #include <MyAnalysis/Utils.h>
 #include <TVector3.h>
+#include <cstdlib>
 
 TVector3 getTransverseComponent(const TVector3 &vec1, const TVector3 &vec2) {
-  TVector3 unit_vec2 = vec2.Unit();
-  return vec1.Dot(unit_vec2) * unit_vec2;
+  return vec1.Dot(vec2) / vec2.Mag2() * vec2;
 }
 
 TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2) {
@@ -20,11 +20,9 @@ TVector3 calculateImpactParameter(const TVector3 &trackVtx,
 }
 
 TVector3 calculateTrackImpactParameter(const xAOD::TrackParticle *track,
-                                       const TVector3 &primaryVertex,
-                                       const TVector3 &beamSpot) {
-  TVector3 trackPos =
-      beamSpot + TVector3(-track->d0() * sin(track->phi0()),
-                          track->d0() * cos(track->phi0()), track->z0());
+                                       const TVector3 &primaryVertex) {
+  TVector3 trackPos = TVector3(-track->d0() * sin(track->phi0()),
+                               track->d0() * cos(track->phi0()), track->z0());
   return calculateImpactParameter(trackPos, track->p4().Vect(), primaryVertex);
 }
 
@@ -65,8 +63,20 @@ const xAOD::TauJet *GetLeadingJet(const xAOD::TauJetContainer *jets,
       continue;
     }
 
-    if (jet->nTracks() == 0) {
-      continue; // Skip jets without tracks
+    // Require 1 or 3 tracks
+    if (jet->nTracks() != 1 && jet->nTracks() != 3) {
+      continue;
+    }
+
+    // Require leading track
+    if (jet->track(0) == nullptr || jet->track(0)->track() == nullptr) {
+      continue;
+    }
+
+    // Check RNN tau ID score (if available)
+    if (jet->isAvailable<float>("RNNJetScoreSigTrans")) {
+      if (jet->auxdata<float>("RNNJetScoreSigTrans") < 0.01)
+        continue;
     }
 
     if (leadingJet == nullptr || jet->pt() > leadingJet->pt()) {

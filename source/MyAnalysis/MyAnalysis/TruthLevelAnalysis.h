@@ -14,9 +14,14 @@
 
 class TruthLevelAnalysis : public EL::AnaAlgorithm {
 private:
-  double m_phiCPPion = 0.;
-  double m_phiCPPionJet = 0.;
-  double m_phiCPPionJetReco = 0.;
+  double m_phiCP_lept_1p0n_truth = 0.;
+  double m_phiCP_lept_1p0n_recon = 0.;
+  double m_phiCP_1p0n_1p0n_truth = 0.;
+  double m_phiCP_1p0n_1p0n_recon = 0.;
+  double m_phiCP_1p1n_1p1n_truth = 0.;
+  double m_phiCP_1p1n_1p1n_recon = 0.;
+  double m_phiCP_1p1n_1pXn_truth = 0.;
+  double m_phiCP_1p1n_1pXn_recon = 0.;
 
 public:
   // This is a standard algorithm constructor

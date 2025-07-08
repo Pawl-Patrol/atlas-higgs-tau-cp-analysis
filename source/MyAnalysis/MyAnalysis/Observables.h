@@ -15,4 +15,11 @@ double phiCP_ImpactParameter(TVector3 pionPosImpactParam,
                              TVector3 pionNegImpactParam,
                              TLorentzVector pionPosP4, TLorentzVector pionNegP4,
                              TLorentzVector referenceFrame);
+
+double phiCP_Pion_RhoDecayPlane(TLorentzVector pionPosP4,
+                                TLorentzVector pionNeuPosP4,
+                                TLorentzVector pionNegP4,
+                                TLorentzVector pionNeuNegP4,
+                                TLorentzVector referenceFrame);
+
 #endif

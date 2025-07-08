@@ -14,8 +14,7 @@ TVector3 calculateImpactParameter(const TVector3 &trackVtx,
                                   const TVector3 &trackDirection,
                                   const TVector3 &primaryVertex);
 TVector3 calculateTrackImpactParameter(const xAOD::TrackParticle *track,
-                                       const TVector3 &primaryVertex,
-                                       const TVector3 &beamSpot);
+                                       const TVector3 &primaryVertex);
 
 enum TauDecayMode {
   LEPTONIC,
