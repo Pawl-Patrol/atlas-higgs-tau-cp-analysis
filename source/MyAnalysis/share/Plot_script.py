@@ -16,17 +16,35 @@ files = [
     for sample in samples
 ]
 trees = [file.Get("tau_analysis") for file in files]
-branch_names = [branch.GetName() for branch in trees[0].GetListOfBranches()]
-
-
-branches = inquirer.checkbox(
-    "Which branches do you want to plot?",
-    choices=branch_names,
-)
 
 BINS = 50
 LIMIT = 2 * ROOT.TMath.Pi()
 DPHI = LIMIT / BINS
+
+branch_names = set()
+for tree in trees:
+    for branch in tree.GetListOfBranches():
+        branch_name = branch.GetName()
+        valid = False
+        for entry in tree:
+            value = getattr(entry, branch_name)
+            if value is None:
+                continue
+            if value < 0:
+                continue
+            if value > LIMIT:
+                continue
+            valid = True
+            break
+        if not valid:
+            continue
+        branch_names.add(branch_name)
+
+branches = inquirer.checkbox(
+    "Which branches do you want to plot?",
+    choices=list(branch_names),
+)
+
 
 histograms = {}
 

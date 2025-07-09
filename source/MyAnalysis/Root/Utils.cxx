@@ -5,12 +5,12 @@
 #include <TVector3.h>
 #include <cstdlib>
 
-TVector3 getTransverseComponent(const TVector3 &vec1, const TVector3 &vec2) {
+TVector3 getParallelComponent(const TVector3 &vec1, const TVector3 &vec2) {
   return vec1.Dot(vec2) / vec2.Mag2() * vec2;
 }
 
 TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2) {
-  return vec1 - getTransverseComponent(vec1, vec2);
+  return vec1 - getParallelComponent(vec1, vec2);
 }
 
 TVector3 calculateImpactParameter(const TVector3 &trackVtx,

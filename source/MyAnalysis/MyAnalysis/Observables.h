@@ -22,4 +22,8 @@ double phiCP_Pion_RhoDecayPlane(TLorentzVector pionPosP4,
                                 TLorentzVector pionNeuNegP4,
                                 TLorentzVector referenceFrame);
 
+double phiCP_IP_Rho(TVector3 pionImpactParam, TLorentzVector pionP4,
+                    TLorentzVector rhoChargedP4, TLorentzVector rhoNeutralP4,
+                    TLorentzVector referenceFrame, bool rhoIsPositive);
+
 #endif

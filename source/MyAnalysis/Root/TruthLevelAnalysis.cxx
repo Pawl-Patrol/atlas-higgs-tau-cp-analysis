@@ -36,6 +36,11 @@ StatusCode TruthLevelAnalysis::initialize() {
   TTree *myTree = tree("tau_analysis");
   myTree->Branch("phiCP_lept_1p0n_truth", &m_phiCP_lept_1p0n_truth);
   myTree->Branch("phiCP_lept_1p0n_recon", &m_phiCP_lept_1p0n_recon);
+  myTree->Branch("phiCP_lept_1p1n_truth", &m_phiCP_lept_1p1n_truth);
+  myTree->Branch("phiCP_lept_1p1n_recon", &m_phiCP_lept_1p1n_recon);
+  myTree->Branch("phiCP_lept_1pXn_truth", &m_phiCP_lept_1pXn_truth);
+  myTree->Branch("phiCP_lept_1pXn_recon", &m_phiCP_lept_1pXn_recon);
+
   myTree->Branch("phiCP_1p0n_1p0n_truth", &m_phiCP_1p0n_1p0n_truth);
   myTree->Branch("phiCP_1p0n_1p0n_recon", &m_phiCP_1p0n_1p0n_recon);
   myTree->Branch("phiCP_1p1n_1p1n_truth", &m_phiCP_1p1n_1p1n_truth);
@@ -245,12 +250,8 @@ StatusCode TruthLevelAnalysis::execute() {
       return StatusCode::SUCCESS;
     }
 
-    // get the two jets with largest pt
     const xAOD::TauJet *tauPosJet = GetLeadingJet(tauJets, true);
     const xAOD::TauJet *tauNegJet = GetLeadingJet(tauJets, false);
-    // if (tauPosJet->charge() < tauNegJet->charge()) {
-    //   std::swap(tauPosJet, tauNegJet);
-    // }
 
     if (tauPosJet == nullptr || tauNegJet == nullptr) {
       ANA_MSG_VERBOSE("Could not find tau+ or tau- jets. Excluding event.");
@@ -288,20 +289,12 @@ StatusCode TruthLevelAnalysis::execute() {
   } else if (tauNegDecayMode == TauDecayMode::LEPTONIC &&
              tauPosDecayMode == TauDecayMode::HADRONIC_1P0N) {
     const xAOD::TauJet *tauPosJet = GetLeadingJet(tauJets, true);
+    const xAOD::Electron *electron = GetLeadingElectron(electrons, false);
 
     if (tauPosJet == nullptr) {
       ANA_MSG_VERBOSE("Could not find tau+ jet. Excluding event.");
       return StatusCode::SUCCESS;
     }
-
-    double dist = (primaryVertex - GetVertexVector(tauPosJet->vertex())).Mag2();
-    if (dist > 0.01) {
-      ANA_MSG_VERBOSE("Tau+ vertex is too far from primary vertex. Excluding "
-                      "event.");
-      return StatusCode::SUCCESS;
-    }
-
-    const xAOD::Electron *electron = GetLeadingElectron(electrons, false);
 
     if (electron == nullptr) {
       ANA_MSG_VERBOSE("Could not find tau- lepton. Excluding event.");
@@ -340,28 +333,55 @@ StatusCode TruthLevelAnalysis::execute() {
                                   : m_phiCP_lept_1p0n_recon - M_PI;
   } else if (tauNegDecayMode == TauDecayMode::HADRONIC_1P0N &&
              tauPosDecayMode == TauDecayMode::LEPTONIC) {
+    const xAOD::TauJet *tauNegJet = GetLeadingJet(tauJets, false);
+    const xAOD::Electron *positron = GetLeadingElectron(electrons, true);
+
+    if (tauNegJet == nullptr) {
+      ANA_MSG_VERBOSE("Could not find tau+ jet. Excluding event.");
+      return StatusCode::SUCCESS;
+    }
+
+    if (positron == nullptr) {
+      ANA_MSG_VERBOSE("Could not find tau- lepton. Excluding event.");
+      return StatusCode::SUCCESS;
+    }
+
     ANA_MSG_DEBUG("Found higgs -> tau+ tau- -> lepton+ pion- decay");
-    // TVector3 imParamPos = calculateImpactParameter(
-    //     pLeptonPos->prodVtx()->v4().Vect(), pLeptonPos->p4().Vect(),
-    //     pTauPos->prodVtx()->v4().Vect());
-    // TVector3 imParamNeg = calculateImpactParameter(
-    //     pPionNeg->prodVtx()->v4().Vect(), pPionNeg->p4().Vect(),
-    //     pTauNeg->prodVtx()->v4().Vect());
-    // m_phiCPPion = phiCP_ImpactParameter(imParamPos, imParamNeg,
-    //                                     pLeptonPos->p4(), pPionNeg->p4());
 
-    // const xAOD::TrackParticle *tauPosTrack = tauPosJet->track(0)->track();
-    // const xAOD::TrackParticle *tauNegTrack = tauNegJet->track(0)->track();
+    TVector3 imParamPos = calculateImpactParameter(
+        pLeptonPos->prodVtx()->v4().Vect(), pLeptonPos->p4().Vect(),
+        pTauPos->prodVtx()->v4().Vect());
+    TVector3 imParamNeg = calculateImpactParameter(
+        pPionNeg->prodVtx()->v4().Vect(), pPionNeg->p4().Vect(),
+        pTauNeg->prodVtx()->v4().Vect());
+    m_phiCP_lept_1p0n_truth = phiCP_ImpactParameter(
+        imParamPos, imParamNeg, pLeptonPos->p4(), pPionNeg->p4(),
+        pLeptonPos->p4() + pPionNeg->p4());
 
-    // TVector3 pionPosImParam = calculateTrackImpactParameter(
-    //     tauPosTrack, GetVertexVector(tauPosJet->vertex()), beamSpot);
-    // TVector3 pionNegImParam = calculateTrackImpactParameter(
-    //     tauNegTrack, GetVertexVector(tauNegJet->vertex()), beamSpot);
-    // m_phiCPPionJetReco = phiCP_ImpactParameter(
-    //     pionPosImParam, pionNegImParam, tauPosTrack->p4(),
-    //     tauNegTrack->p4());
-  } else if (tauNegDecayMode == TauDecayMode::HADRONIC_1P1N &&
-             tauPosDecayMode == TauDecayMode::HADRONIC_1P1N) {
+    const xAOD::TrackParticle *tauNegTrack = tauNegJet->track(0)->track();
+    const xAOD::TrackParticle *tauPosTrack = positron->trackParticle(0);
+
+    TVector3 pionPosImParam = calculateTrackImpactParameter(
+        tauPosTrack, GetVertexVector(tauNegJet->vertex()) - beamSpot);
+    TVector3 pionNegImParam = calculateTrackImpactParameter(
+        tauNegTrack, GetVertexVector(tauNegJet->vertex()) - beamSpot);
+    m_phiCP_lept_1p0n_recon = phiCP_ImpactParameter(
+        pionPosImParam, pionNegImParam, tauPosTrack->p4(), tauNegTrack->p4(),
+        tauNegJet->p4() + positron->p4());
+
+    // leptonic correction:
+    m_phiCP_lept_1p0n_truth = m_phiCP_lept_1p0n_truth < M_PI
+                                  ? m_phiCP_lept_1p0n_truth + M_PI
+                                  : m_phiCP_lept_1p0n_truth - M_PI;
+    m_phiCP_lept_1p0n_recon = m_phiCP_lept_1p0n_recon < M_PI
+                                  ? m_phiCP_lept_1p0n_recon + M_PI
+                                  : m_phiCP_lept_1p0n_recon - M_PI;
+  } else if ((tauNegDecayMode == TauDecayMode::HADRONIC_1P1N &&
+              tauPosDecayMode == TauDecayMode::HADRONIC_1P1N) ||
+             (tauNegDecayMode == TauDecayMode::HADRONIC_1P1N &&
+              tauPosDecayMode == TauDecayMode::HADRONIC_1PXN) ||
+             (tauNegDecayMode == TauDecayMode::HADRONIC_1PXN &&
+              tauPosDecayMode == TauDecayMode::HADRONIC_1P1N)) {
     if (tauJets == nullptr || tauJets->size() < 2) {
       ANA_MSG_VERBOSE("Not enough tau jets found. Excluding event.");
       return StatusCode::SUCCESS;
@@ -399,7 +419,7 @@ StatusCode TruthLevelAnalysis::execute() {
       neutralP4Neg += pionZero->p4();
     }
 
-    m_phiCP_1p1n_1p1n_truth =
+    double phiCP_truth =
         phiCP_Pion_RhoDecayPlane(chargedP4Pos, neutralP4Pos, chargedP4Neg,
                                  neutralP4Neg, pTauPos->p4() + pTauNeg->p4());
 
@@ -423,9 +443,81 @@ StatusCode TruthLevelAnalysis::execute() {
       neutralP4Neg += tauNegJet->neutralPFO(i)->p4();
     }
 
-    m_phiCP_1p1n_1p1n_recon = phiCP_Pion_RhoDecayPlane(
+    double phiCP_recon = phiCP_Pion_RhoDecayPlane(
         chargedP4Pos, neutralP4Pos, chargedP4Neg, neutralP4Neg,
         tauPosJet->p4() + tauNegJet->p4());
+
+    if (tauNegDecayMode == TauDecayMode::HADRONIC_1PXN ||
+        tauPosDecayMode == TauDecayMode::HADRONIC_1PXN) {
+      m_phiCP_1p1n_1pXn_truth = phiCP_truth;
+      m_phiCP_1p1n_1pXn_recon = phiCP_recon;
+    } else {
+      m_phiCP_1p1n_1p1n_truth = phiCP_truth;
+      m_phiCP_1p1n_1p1n_recon = phiCP_recon;
+    }
+  } else if (tauNegDecayMode == TauDecayMode::LEPTONIC &&
+             (tauPosDecayMode == TauDecayMode::HADRONIC_1P1N ||
+              tauPosDecayMode == TauDecayMode::HADRONIC_1PXN)) {
+    const xAOD::TauJet *tauPosJet = GetLeadingJet(tauJets, true);
+    const xAOD::Electron *electron = GetLeadingElectron(electrons, false);
+
+    if (tauPosJet == nullptr) {
+      ANA_MSG_VERBOSE("Could not find tau+ jet. Excluding event.");
+      return StatusCode::SUCCESS;
+    }
+
+    if (electron == nullptr) {
+      ANA_MSG_VERBOSE("Could not find tau- lepton. Excluding event.");
+      return StatusCode::SUCCESS;
+    }
+
+    ANA_MSG_DEBUG("Found higgs -> tau+ tau- -> pion+ pion0 lepton- decay");
+
+    // sum over neutral pions
+    TLorentzVector chargedP4Pos = pPionPos->p4();
+    TLorentzVector neutralP4Pos(0.0, 0.0, 0.0, 0.0);
+    for (const xAOD::TruthParticle *pionZero : pPionZerosPos) {
+      ANA_MSG_DEBUG("Found neutral pion in tau+ decay: "
+                    << pionZero->pdgId() << " " << pionZero->barcode());
+      neutralP4Pos += pionZero->p4();
+    }
+
+    TVector3 imParamNeg = calculateImpactParameter(
+        pLeptonNeg->prodVtx()->v4().Vect(), pLeptonNeg->p4().Vect(),
+        pTauNeg->prodVtx()->v4().Vect());
+    double phiCP_truth =
+        phiCP_IP_Rho(imParamNeg, pLeptonNeg->p4(), chargedP4Pos, neutralP4Pos,
+                     pTauPos->p4() + pTauNeg->p4(), true);
+
+    const xAOD::TrackParticle *tauNegTrack = electron->trackParticle(0);
+
+    chargedP4Pos.SetPxPyPzE(0.0, 0.0, 0.0, 0.0);
+    for (auto track : tauPosJet->tracks()) {
+      chargedP4Pos += track->track()->p4();
+    }
+
+    neutralP4Pos.SetPxPyPzE(0.0, 0.0, 0.0, 0.0);
+    for (size_t i = 0; i < tauPosJet->nNeutralPFOs(); ++i) {
+      neutralP4Pos += tauPosJet->neutralPFO(i)->p4();
+    }
+
+    TVector3 pionNegImParam = calculateTrackImpactParameter(
+        tauNegTrack, GetVertexVector(tauPosJet->vertex()) - beamSpot);
+    double phiCP_recon =
+        phiCP_IP_Rho(pionNegImParam, tauNegTrack->p4(), chargedP4Pos,
+                     neutralP4Pos, tauPosJet->p4() + electron->p4(), true);
+
+    // leptonic correction:
+    phiCP_truth = phiCP_truth < M_PI ? phiCP_truth + M_PI : phiCP_truth - M_PI;
+    phiCP_recon = phiCP_recon < M_PI ? phiCP_recon + M_PI : phiCP_recon - M_PI;
+
+    if (tauPosDecayMode == TauDecayMode::HADRONIC_1PXN) {
+      m_phiCP_lept_1pXn_truth = phiCP_truth;
+      m_phiCP_lept_1pXn_recon = phiCP_recon;
+    } else {
+      m_phiCP_lept_1p1n_truth = phiCP_truth;
+      m_phiCP_lept_1p1n_recon = phiCP_recon;
+    }
   } else {
     ANA_MSG_VERBOSE("Unknown tau+ tau- decay mode. Excluding event.");
     return StatusCode::SUCCESS;

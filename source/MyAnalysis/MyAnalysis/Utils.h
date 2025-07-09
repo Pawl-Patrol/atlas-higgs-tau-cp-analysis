@@ -7,7 +7,7 @@
 #include "xAODTracking/Vertex.h"
 #include <TVector3.h>
 
-TVector3 getTransverseComponent(const TVector3 &vec1, const TVector3 &vec2);
+TVector3 getParallelComponent(const TVector3 &vec1, const TVector3 &vec2);
 TVector3 getPerpendicularComponent(const TVector3 &vec1, const TVector3 &vec2);
 
 TVector3 calculateImpactParameter(const TVector3 &trackVtx,

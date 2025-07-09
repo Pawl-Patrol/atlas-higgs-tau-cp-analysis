@@ -23,7 +23,7 @@ questions = [
         "events",
         message="How many events do you want to process?",
         default="100",
-        validate=lambda _, x: x.isdigit() and int(x) > 0,
+        validate=lambda _, x: x.isdigit() or x == "-1",
     ),
     inquirer.Confirm(
         "debug",
