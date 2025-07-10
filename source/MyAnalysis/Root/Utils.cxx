@@ -73,10 +73,13 @@ const xAOD::TauJet *GetLeadingJet(const xAOD::TauJetContainer *jets,
       continue;
     }
 
-    // Check RNN tau ID score (if available)
-    if (jet->isAvailable<float>("RNNJetScoreSigTrans")) {
-      if (jet->auxdata<float>("RNNJetScoreSigTrans") < 0.01)
-        continue;
+    if (jet->pt() < 20000.0) {
+      continue; // Skip jets below 25 GeV
+    }
+
+    if (abs(jet->eta()) > 2.47 ||
+        (abs(jet->eta()) > 1.37 && abs(jet->eta()) < 1.52)) {
+      continue; // Skip jets outside the acceptance range
     }
 
     if (leadingJet == nullptr || jet->pt() > leadingJet->pt()) {

@@ -4,3 +4,4 @@ run
 samples
 __pycache__
 .nfs*
+plots

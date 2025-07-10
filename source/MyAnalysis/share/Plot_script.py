@@ -9,6 +9,19 @@ samples = inquirer.checkbox(
     choices=list(SAMPLES.keys()),
 )
 
+lower = float(inquirer.text("What's the lower limit?", default="0.000"))
+upper = float(inquirer.text("What's the upper limit?", default="6.283"))
+
+x_label = inquirer.text("What's the x label?", default="#phi_{{CP}}")
+y_label = inquirer.text("What's the y label?", default="1/#sigma_{{tot}} d#sigma/d#phi_{{CP}}")
+
+title = inquirer.text(
+    "What's the title of the plot?", default="Phi CP Histograms"
+)
+
+BINS = 50
+DPHI = (upper - lower) / BINS
+
 import ROOT
 
 files = [
@@ -17,9 +30,7 @@ files = [
 ]
 trees = [file.Get("tau_analysis") for file in files]
 
-BINS = 50
-LIMIT = 2 * ROOT.TMath.Pi()
-DPHI = LIMIT / BINS
+
 
 branch_names = set()
 for tree in trees:
@@ -30,9 +41,9 @@ for tree in trees:
             value = getattr(entry, branch_name)
             if value is None:
                 continue
-            if value < 0:
+            if value < lower:
                 continue
-            if value > LIMIT:
+            if value > upper:
                 continue
             valid = True
             break
@@ -51,7 +62,7 @@ histograms = {}
 for tree, sample in zip(trees, samples):
     for branch in branches:
         hist_name = f"#phi_{{CP}} ({SAMPLES[sample]}/{branch.replace('phiCP_', '')})"
-        hist = ROOT.TH1F(hist_name, hist_name, BINS, 0, LIMIT)
+        hist = ROOT.TH1F(hist_name, hist_name, BINS, lower, upper)
 
         for entry in tree:
             value = getattr(entry, branch)
@@ -94,9 +105,9 @@ for i, hist in enumerate(histograms.values()):
     if i == 0:
         hist.SetMaximum(global_max_y * 1.05)
         hist.SetMinimum(global_min_y * 0.95)
-        hist.SetTitle("Phi CP Histograms")
-        hist.GetXaxis().SetTitle("#phi_{CP}")
-        hist.GetYaxis().SetTitle("1/#sigma_{tot} d#sigma/d#phi_{CP}")
+        hist.SetTitle(title)
+        hist.GetXaxis().SetTitle(x_label)
+        hist.GetYaxis().SetTitle(y_label)
     hist.SetLineColor(COLORS[i])
     hist.Draw("HIST" if i == 0 else "HIST SAME")
 

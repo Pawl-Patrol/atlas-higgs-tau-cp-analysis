@@ -3,53 +3,14 @@
 #include <TLorentzVector.h>
 #include <TVector3.h>
 
-double phiCP_Pion_Tau(TLorentzVector higgsP4, TLorentzVector tauPosP4,
-                      TLorentzVector tauNegP4, TLorentzVector piPosP4,
-                      TLorentzVector piNegP4) {
-
-  TVector3 higgsBoostVector = higgsP4.BoostVector();
-  tauPosP4.Boost(-higgsBoostVector);
-  tauNegP4.Boost(-higgsBoostVector);
-  piPosP4.Boost(-higgsBoostVector);
-  piNegP4.Boost(-higgsBoostVector);
-
-  TVector3 planePos = (tauPosP4.Vect().Cross(piPosP4.Vect())).Unit();
-  TVector3 planeNeg = (tauNegP4.Vect().Cross(piNegP4.Vect())).Unit();
-
-  double angleO = piNegP4.Vect().Unit() * (planePos.Cross(planeNeg));
-  double phi = acos(planePos * planeNeg);
-
-  return angleO >= 0 ? phi : 2 * M_PI - phi;
-}
-
-double phiCP_Pion_Neutrino(TLorentzVector higgsP4, TLorentzVector antiNeutriP4,
-                           TLorentzVector neutriP4, TLorentzVector piPosP4,
-                           TLorentzVector piNegP4) {
-  TVector3 higgsBoostVector = higgsP4.BoostVector();
-  antiNeutriP4.Boost(-higgsBoostVector);
-  neutriP4.Boost(-higgsBoostVector);
-  piPosP4.Boost(-higgsBoostVector);
-  piNegP4.Boost(-higgsBoostVector);
-
-  TVector3 planePos = (antiNeutriP4.Vect().Cross(piPosP4.Vect())).Unit();
-  TVector3 planeNeg = (neutriP4.Vect().Cross(piNegP4.Vect())).Unit();
-
-  double angleO = piNegP4.Vect().Unit() * (planePos.Cross(planeNeg));
-  double phi = acos(planePos * planeNeg);
-
-  return angleO >= 0 ? phi : 2 * M_PI - phi;
-}
-
 double phiCP_ImpactParameter(TVector3 pionPosImpactParam,
                              TVector3 pionNegImpactParam,
                              TLorentzVector pionPosP4, TLorentzVector pionNegP4,
                              TLorentzVector referenceFrame) {
 
   // Using pion impact parameter/momentum planes
-  TLorentzVector impactParamPos =
-      TLorentzVector(pionPosImpactParam.Unit(), 0.0);
-  TLorentzVector impactParamNeg =
-      TLorentzVector(pionNegImpactParam.Unit(), 0.0);
+  TLorentzVector impactParamPos(pionPosImpactParam.Unit(), 0.0);
+  TLorentzVector impactParamNeg(pionNegImpactParam.Unit(), 0.0);
 
   // Boost into CMF of the pions
   TVector3 cmfBoostVector = referenceFrame.BoostVector();
@@ -108,5 +69,52 @@ double phiCP_Pion_RhoDecayPlane(TLorentzVector pionPosP4,
       return phiStarPrime - M_PI;
     }
   }
+
+  return phiStarPrime;
+}
+
+double phiCP_IP_Rho(TVector3 pionImpactParam, TLorentzVector pionP4,
+                    TLorentzVector rhoChargedP4, TLorentzVector rhoNeutralP4,
+                    TLorentzVector referenceFrame, bool rhoIsPositive) {
+  if (!pionP4.Mag2() || !rhoNeutralP4.Mag2() || !rhoNeutralP4.Mag2()) {
+    return -99; // Invalid input
+  }
+
+  double y = (rhoChargedP4.E() - rhoNeutralP4.E()) /
+             (rhoChargedP4.E() + rhoNeutralP4.E());
+
+  TLorentzVector impactParam(pionImpactParam.Unit(), 0.0);
+
+  TVector3 cmfBoostVector = referenceFrame.BoostVector();
+  impactParam.Boost(-cmfBoostVector);
+  pionP4.Boost(-cmfBoostVector);
+  rhoChargedP4.Boost(-cmfBoostVector);
+  rhoNeutralP4.Boost(-cmfBoostVector);
+
+  TVector3 planeIP =
+      getPerpendicularComponent(impactParam.Vect(), pionP4.Vect()).Unit();
+  TVector3 planeRho =
+      getPerpendicularComponent(rhoNeutralP4.Vect(), rhoChargedP4.Vect())
+          .Unit();
+
+  double angleO;
+  if (rhoIsPositive) {
+    angleO = pionP4.Vect().Unit().Dot(planeRho.Cross(planeIP));
+  } else {
+    angleO = rhoChargedP4.Vect().Unit().Dot(planeIP.Cross(planeRho));
+  }
+
+  double phiStar = acos(planeRho * planeIP);
+
+  double phiStarPrime = angleO >= 0 ? phiStar : 2 * M_PI - phiStar;
+
+  if (y < 0) {
+    if (phiStarPrime < M_PI) {
+      return phiStarPrime + M_PI;
+    } else {
+      return phiStarPrime - M_PI;
+    }
+  }
+
   return phiStarPrime;
 }
