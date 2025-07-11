@@ -37,6 +37,7 @@ StatusCode TruthLevelAnalysis::initialize() {
 
   // Hadronic observables
   myTree->Branch("phiCP_1p0n_1p0n_truth", &m_phiCP_1p0n_1p0n_truth);
+  myTree->Branch("phiCP_1p0n_1p0n_recon", &m_phiCP_1p0n_1p0n_recon);
   myTree->Branch("phiCP_1p1n_1p1n_truth", &m_phiCP_1p1n_1p1n_truth);
   myTree->Branch("phiCP_1p1n_1p1n_recon", &m_phiCP_1p1n_1p1n_recon);
   myTree->Branch("phiCP_1p1n_1pXn_truth", &m_phiCP_1p1n_1pXn_truth);
@@ -51,7 +52,6 @@ StatusCode TruthLevelAnalysis::initialize() {
   myTree->Branch("phiCP_lept_1pXn_recon", &m_phiCP_lept_1pXn_recon);
 
   // For debugging purposes
-  myTree->Branch("phiCP_1p0n_1p0n_recon", &m_phiCP_1p0n_1p0n_recon);
   myTree->Branch("m_phiCP_1p0n_1p0n_prod_vtx_diff_x",
                  &m_phiCP_1p0n_1p0n_prod_vtx_diff_x);
   myTree->Branch("m_phiCP_1p0n_1p0n_prod_vtx_diff_y",
