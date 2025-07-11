@@ -3,27 +3,28 @@
 #include <TLorentzVector.h>
 #include <TVector3.h>
 
+/* IP-method */
 double phiCP_ImpactParameter(TVector3 pionPosImpactParam,
                              TVector3 pionNegImpactParam,
                              TLorentzVector pionPosP4, TLorentzVector pionNegP4,
                              TLorentzVector referenceFrame) {
+  TLorentzVector pionPosImpactParamP4(pionPosImpactParam.Unit(), 0.0);
+  TLorentzVector pionNegImpactParamP4(pionNegImpactParam.Unit(), 0.0);
 
-  // Using pion impact parameter/momentum planes
-  TLorentzVector impactParamPos(pionPosImpactParam.Unit(), 0.0);
-  TLorentzVector impactParamNeg(pionNegImpactParam.Unit(), 0.0);
-
-  // Boost into CMF of the pions
-  TVector3 cmfBoostVector = referenceFrame.BoostVector();
-  impactParamPos.Boost(-cmfBoostVector);
-  impactParamNeg.Boost(-cmfBoostVector);
-  pionPosP4.Boost(-cmfBoostVector);
-  pionNegP4.Boost(-cmfBoostVector);
+  // Boost into reference frame
+  TVector3 boostVector = referenceFrame.BoostVector();
+  pionPosImpactParamP4.Boost(-boostVector);
+  pionNegImpactParamP4.Boost(-boostVector);
+  pionPosP4.Boost(-boostVector);
+  pionNegP4.Boost(-boostVector);
 
   // Get the impact parameter component perpendicular to the momentum
   TVector3 planePos =
-      getPerpendicularComponent(impactParamPos.Vect(), pionPosP4.Vect()).Unit();
+      getPerpendicularComponent(pionPosImpactParamP4.Vect(), pionPosP4.Vect())
+          .Unit();
   TVector3 planeNeg =
-      getPerpendicularComponent(impactParamNeg.Vect(), pionNegP4.Vect()).Unit();
+      getPerpendicularComponent(pionNegImpactParamP4.Vect(), pionNegP4.Vect())
+          .Unit();
 
   double angleO = pionNegP4.Vect().Unit().Dot(planePos.Cross(planeNeg));
   double phi = acos(planePos * planeNeg);
@@ -31,27 +32,26 @@ double phiCP_ImpactParameter(TVector3 pionPosImpactParam,
   return angleO >= 0 ? phi : 2 * M_PI - phi;
 }
 
+/* ρ-method */
 double phiCP_Pion_RhoDecayPlane(TLorentzVector pionPosP4,
                                 TLorentzVector pionNeuPosP4,
                                 TLorentzVector pionNegP4,
                                 TLorentzVector pionNeuNegP4,
                                 TLorentzVector referenceFrame) {
-  if (!pionPosP4.Mag2() || !pionNegP4.Mag2() || !pionNeuPosP4.Mag2() ||
-      !pionNeuNegP4.Mag2()) {
-    return -99; // Invalid input
-  }
-
+  // Calculate y+ and y- in the laboratory frame
   double yPos =
       (pionPosP4.E() - pionNeuPosP4.E()) / (pionPosP4.E() + pionNeuPosP4.E());
   double yNeg =
       (pionNegP4.E() - pionNeuNegP4.E()) / (pionNegP4.E() + pionNeuNegP4.E());
 
-  TVector3 cmfBoostVecotr = referenceFrame.BoostVector();
-  pionPosP4.Boost(-cmfBoostVecotr);
-  pionNeuPosP4.Boost(-cmfBoostVecotr);
-  pionNegP4.Boost(-cmfBoostVecotr);
-  pionNeuNegP4.Boost(-cmfBoostVecotr);
+  // Boost into reference frame
+  TVector3 boostVector = referenceFrame.BoostVector();
+  pionPosP4.Boost(-boostVector);
+  pionNeuPosP4.Boost(-boostVector);
+  pionNegP4.Boost(-boostVector);
+  pionNeuNegP4.Boost(-boostVector);
 
+  // Get the neutral p4 component perpendicular to the momentum
   TVector3 planePos =
       getPerpendicularComponent(pionNeuPosP4.Vect(), pionPosP4.Vect()).Unit();
   TVector3 planeNeg =
@@ -73,26 +73,25 @@ double phiCP_Pion_RhoDecayPlane(TLorentzVector pionPosP4,
   return phiStarPrime;
 }
 
+/* IP-ρ-method */
 double phiCP_IP_Rho(TVector3 pionImpactParam, TLorentzVector pionP4,
                     TLorentzVector rhoChargedP4, TLorentzVector rhoNeutralP4,
                     TLorentzVector referenceFrame, bool rhoIsPositive) {
-  if (!pionP4.Mag2() || !rhoNeutralP4.Mag2() || !rhoNeutralP4.Mag2()) {
-    return -99; // Invalid input
-  }
+  TLorentzVector pionImpactParamP4(pionImpactParam.Unit(), 0.0);
 
+  // Calculate y in the laboratory frame
   double y = (rhoChargedP4.E() - rhoNeutralP4.E()) /
              (rhoChargedP4.E() + rhoNeutralP4.E());
 
-  TLorentzVector impactParam(pionImpactParam.Unit(), 0.0);
-
+  // Boost into reference frame
   TVector3 cmfBoostVector = referenceFrame.BoostVector();
-  impactParam.Boost(-cmfBoostVector);
+  pionImpactParamP4.Boost(-cmfBoostVector);
   pionP4.Boost(-cmfBoostVector);
   rhoChargedP4.Boost(-cmfBoostVector);
   rhoNeutralP4.Boost(-cmfBoostVector);
 
   TVector3 planeIP =
-      getPerpendicularComponent(impactParam.Vect(), pionP4.Vect()).Unit();
+      getPerpendicularComponent(pionImpactParamP4.Vect(), pionP4.Vect()).Unit();
   TVector3 planeRho =
       getPerpendicularComponent(rhoNeutralP4.Vect(), rhoChargedP4.Vect())
           .Unit();

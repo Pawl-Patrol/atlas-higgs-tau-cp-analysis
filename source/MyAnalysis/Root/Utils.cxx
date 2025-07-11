@@ -21,9 +21,11 @@ TVector3 calculateImpactParameter(const TVector3 &trackVtx,
 
 TVector3 calculateTrackImpactParameter(const xAOD::TrackParticle *track,
                                        const TVector3 &primaryVertex) {
-  TVector3 trackPos = TVector3(-track->d0() * sin(track->phi0()),
-                               track->d0() * cos(track->phi0()), track->z0());
-  return calculateImpactParameter(trackPos, track->p4().Vect(), primaryVertex);
+  TVector3 pointOfClosestApproach =
+      TVector3(-track->d0() * sin(track->phi0()),
+               track->d0() * cos(track->phi0()), track->z0());
+  return calculateImpactParameter(pointOfClosestApproach, track->p4().Vect(),
+                                  primaryVertex);
 }
 
 TauDecayMode inferTauDecayMode(int nLepton, int nPionCharged, int nPionZero,
@@ -55,10 +57,16 @@ TVector3 GetVertexVector(const xAOD::Vertex *vertex) {
   return TVector3(vertex->x(), vertex->y(), vertex->z());
 }
 
+/**
+ * From the TauJet container, find the best candidate jet for the given charge.
+ * Applies some very basic selection criteria and find the jet with the highest
+ * pT.
+ */
 const xAOD::TauJet *GetLeadingJet(const xAOD::TauJetContainer *jets,
                                   bool positive) {
   const xAOD::TauJet *leadingJet = nullptr;
   for (const xAOD::TauJet *jet : *jets) {
+    // Require the jet to have the right charge
     if ((jet->charge() <= 0 && positive) || (jet->charge() >= 0 && !positive)) {
       continue;
     }
@@ -73,13 +81,15 @@ const xAOD::TauJet *GetLeadingJet(const xAOD::TauJetContainer *jets,
       continue;
     }
 
+    // Skip jets below 20 GeV
     if (jet->pt() < 20000.0) {
-      continue; // Skip jets below 25 GeV
+      continue;
     }
 
+    // Skip jets outside the barrel and endcap regions
     if (abs(jet->eta()) > 2.47 ||
         (abs(jet->eta()) > 1.37 && abs(jet->eta()) < 1.52)) {
-      continue; // Skip jets outside the acceptance range
+      continue;
     }
 
     if (leadingJet == nullptr || jet->pt() > leadingJet->pt()) {
@@ -90,23 +100,30 @@ const xAOD::TauJet *GetLeadingJet(const xAOD::TauJetContainer *jets,
   return leadingJet;
 }
 
+/**
+ * From the Electron container, find the leading electron with the given charge.
+ * Applies some very basic selection criteria and finds the electron with the
+ * highest pT.
+ */
 const xAOD::Electron *
 GetLeadingElectron(const xAOD::ElectronContainer *electrons, bool positive) {
-  const xAOD::Electron *leading = nullptr;
+  const xAOD::Electron *leadingElectron = nullptr;
   for (const xAOD::Electron *electron : *electrons) {
+    // Require the electron to have the right charge
     if ((electron->charge() <= 0 && positive) ||
         (electron->charge() >= 0 && !positive)) {
       continue;
     }
 
+    // Skip electrons without tracks
     if (electron->nTrackParticles() == 0) {
-      continue; // Skip electrons without tracks
+      continue;
     }
 
-    if (leading == nullptr || electron->pt() > leading->pt()) {
-      leading = electron;
+    if (leadingElectron == nullptr || electron->pt() > leadingElectron->pt()) {
+      leadingElectron = electron;
     }
   }
 
-  return leading;
+  return leadingElectron;
 }
