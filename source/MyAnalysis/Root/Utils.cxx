@@ -59,7 +59,7 @@ TVector3 GetVertexVector(const xAOD::Vertex *vertex) {
 
 /**
  * From the TauJet container, find the best candidate jet for the given charge.
- * Applies some very basic selection criteria and find the jet with the highest
+ * Applies some very basic selection criteria and finds the jet with the highest
  * pT.
  */
 const xAOD::TauJet *GetLeadingJet(const xAOD::TauJetContainer *jets,

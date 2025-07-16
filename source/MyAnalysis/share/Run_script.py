@@ -11,6 +11,12 @@ SAMPLES = {
     "cp-odd\thadhad": "cp-odd-hadhad",
     "cp-even\thadlep": "cp-even-hadlep",
     "cp-odd\thadlep": "cp-odd-hadlep",
+    "cp-even\tlephad": "cp-even-lephad",
+    "cp-odd\tlephad": "cp-odd-lephad",
+    "cp-even\thadhad\tH200": "cp-even-hadhad-H200",
+    "cp-even\thadhad\tH500": "cp-even-hadhad-H500",
+    "cp-even\thadhad\tH1000": "cp-even-hadhad-H1000",
+    "cp-even\thadhad\tH3000": "cp-even-hadhad-H3000",
 }
 
 questions = [

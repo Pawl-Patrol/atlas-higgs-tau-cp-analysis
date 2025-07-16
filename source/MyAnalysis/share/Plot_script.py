@@ -2,25 +2,25 @@
 
 import inquirer
 from Run_script import SAMPLES
-
+import math
 
 samples = inquirer.checkbox(
     "Which samples do you want to load?",
     choices=list(SAMPLES.keys()),
 )
 
-lower = float(inquirer.text("What's the lower limit?", default="0.000"))
-upper = float(inquirer.text("What's the upper limit?", default="6.283"))
+lower = 0.0 # float(inquirer.text("What's the lower limit?", default="0.000"))
+upper = 2 * math.pi # float(inquirer.text("What's the upper limit?", default="6.283"))
 
-x_label = inquirer.text("What's the x label?", default="#phi_{{CP}}")
-y_label = inquirer.text("What's the y label?", default="1/#sigma_{{tot}} d#sigma/d#phi_{{CP}}")
-
-title = inquirer.text(
-    "What's the title of the plot?", default="Phi CP Histograms"
-)
+x_label = "#phi_{CP}" # inquirer.text("What's the x label?", default="#phi_{{CP}}")
+y_label = "1/#sigma_{tot} d#sigma/d#phi_{CP}" # inquirer.text("What's the y label?", default="1/#sigma_{{tot}} d#sigma/d#phi_{{CP}}")
 
 BINS = 50
 DPHI = (upper - lower) / BINS
+
+scaling_factor = 1.0 / DPHI
+
+print("Loading ROOT files...")
 
 import ROOT
 
@@ -51,22 +51,46 @@ for tree in trees:
             continue
         branch_names.add(branch_name)
 
+branch_names = sorted(branch_names)
+
 branches = inquirer.checkbox(
     "Which branches do you want to plot?",
     choices=list(branch_names),
 )
+
+cuts = {}
+while True:
+    branch = inquirer.list_input(
+        "Select branches to apply cuts on.",
+        choices=["No, I'm good!"] + list(branch_names),
+        default=None,
+    )
+    if branch == "No, I'm good!": 
+        break
+    lower_cut = inquirer.text(f"Apply lower limit {branch}?", default="")
+    upper_cut = inquirer.text(f"Apply upper limit {branch}?", default="")
+    cuts[branch] = (float(lower_cut) if lower_cut else -math.inf, float(upper_cut) if upper_cut else math.inf)
 
 
 histograms = {}
 
 for tree, sample in zip(trees, samples):
     for branch in branches:
-        hist_name = f"#phi_{{CP}} ({SAMPLES[sample]}/{branch.replace('phiCP_', '')})"
+        hist_name = SAMPLES[sample].replace("-hadhad", "").replace("-hadlep", "").replace("-lephad", "")
+        hist_title = branch.replace('phiCP_', '')
         hist = ROOT.TH1F(hist_name, hist_name, BINS, lower, upper)
+        hist.SetTitle(hist_title)
 
         for entry in tree:
-            value = getattr(entry, branch)
-            hist.Fill(value)
+            for cut_branch, (cut_lower, cut_upper) in cuts.items():
+                cut_value = abs(getattr(entry, cut_branch))
+                if cut_lower and cut_value < cut_lower:
+                    break
+                if cut_upper and cut_value > cut_upper:
+                    break
+            else: # Only proceed if all cuts are satisfied
+                value = getattr(entry, branch)
+                hist.Fill(value)
 
         integral = hist.Integral()
         if integral == 0:
@@ -75,7 +99,7 @@ for tree, sample in zip(trees, samples):
             )
         else:
             print(f"Normalizing histogram '{hist_name}' with integral {integral:.0f}.")
-            hist.Scale(1 / (integral * DPHI))  # Normalization
+            hist.Scale(scaling_factor / integral)  # Normalization
         hist.SetLineWidth(1)
         hist.SetStats(0)
         histograms[hist_name] = hist
@@ -105,7 +129,6 @@ for i, hist in enumerate(histograms.values()):
     if i == 0:
         hist.SetMaximum(global_max_y * 1.05)
         hist.SetMinimum(global_min_y * 0.95)
-        hist.SetTitle(title)
         hist.GetXaxis().SetTitle(x_label)
         hist.GetYaxis().SetTitle(y_label)
     hist.SetLineColor(COLORS[i])
