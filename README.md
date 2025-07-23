@@ -4,8 +4,6 @@ Contains code and scripts used for creating plots of CP-sensitive observables in
 
 # Usage
 
-Commands I use regulary.
-
 ## Commands on startup
 
 1. `setupATLAS -c el9 --mount /path/to/samples:/samples`
