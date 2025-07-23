@@ -1,5 +1,6 @@
 #include "AsgMessaging/MessageCheck.h"
 #include "MyAnalysis/Observables.h"
+#include "xAODEgamma/Electron.h"
 #include "xAODTracking/TrackParticlexAODHelpers.h"
 #include "xAODTruth/TruthParticleContainer.h"
 #include "xAODTruth/versions/TruthVertex_v1.h"
@@ -460,9 +461,9 @@ StatusCode TruthLevelAnalysis::execute() {
       neutralP4Neg += tauNegJet->neutralPFO(i)->p4();
     }
 
-    double phiCP_recon = phiCP_Pion_RhoDecayPlane(
-        chargedP4Pos, neutralP4Pos, chargedP4Neg, neutralP4Neg,
-        tauPosJet->p4() + tauNegJet->p4());
+    double phiCP_recon =
+        phiCP_Pion_RhoDecayPlane(chargedP4Pos, neutralP4Pos, chargedP4Neg,
+                                 neutralP4Neg, chargedP4Pos + chargedP4Neg);
 
     if (tauNegDecayMode == TauDecayMode::HADRONIC_1PXN ||
         tauPosDecayMode == TauDecayMode::HADRONIC_1PXN) {

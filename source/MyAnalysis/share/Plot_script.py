@@ -9,18 +9,20 @@ samples = inquirer.checkbox(
     choices=list(SAMPLES.keys()),
 )
 
-lower = 0.0 # float(inquirer.text("What's the lower limit?", default="0.000"))
-upper = 2 * math.pi # float(inquirer.text("What's the upper limit?", default="6.283"))
+lower = 0.0  # float(inquirer.text("What's the lower limit?", default="0.000"))
+upper = (
+    2  # * math.pi # float(inquirer.text("What's the upper limit?", default="6.283"))
+)
 
-x_label = "#phi_{CP}" # inquirer.text("What's the x label?", default="#phi_{{CP}}")
-y_label = "1/#sigma_{tot} d#sigma/d#phi_{CP}" # inquirer.text("What's the y label?", default="1/#sigma_{{tot}} d#sigma/d#phi_{{CP}}")
+x_label = "#phi_{CP}"  # inquirer.text("What's the x label?", default="#phi_{{CP}}")
+y_label = "1/#sigma_{tot} d#sigma/d#phi_{CP}"  # inquirer.text("What's the y label?", default="1/#sigma_{{tot}} d#sigma/d#phi_{{CP}}")
 
-BINS = 50
+BINS = 100
 DPHI = (upper - lower) / BINS
 
 scaling_factor = 1.0 / DPHI
 
-print("Loading ROOT files...")
+print("Loading ntuples...")
 
 import ROOT
 
@@ -29,7 +31,6 @@ files = [
     for sample in samples
 ]
 trees = [file.Get("tau_analysis") for file in files]
-
 
 
 branch_names = set()
@@ -65,19 +66,27 @@ while True:
         choices=["No, I'm good!"] + list(branch_names),
         default=None,
     )
-    if branch == "No, I'm good!": 
+    if branch == "No, I'm good!":
         break
     lower_cut = inquirer.text(f"Apply lower limit {branch}?", default="")
     upper_cut = inquirer.text(f"Apply upper limit {branch}?", default="")
-    cuts[branch] = (float(lower_cut) if lower_cut else -math.inf, float(upper_cut) if upper_cut else math.inf)
+    cuts[branch] = (
+        float(lower_cut) if lower_cut else -math.inf,
+        float(upper_cut) if upper_cut else math.inf,
+    )
 
 
 histograms = {}
 
 for tree, sample in zip(trees, samples):
     for branch in branches:
-        hist_name = SAMPLES[sample].replace("-hadhad", "").replace("-hadlep", "").replace("-lephad", "")
-        hist_title = branch.replace('phiCP_', '')
+        hist_name = (
+            SAMPLES[sample]
+            .replace("-hadhad", "")
+            .replace("-hadlep", "")
+            .replace("-lephad", "")
+        )
+        hist_title = branch.replace("phiCP_", "")
         hist = ROOT.TH1F(hist_name, hist_name, BINS, lower, upper)
         hist.SetTitle(hist_title)
 
@@ -88,7 +97,7 @@ for tree, sample in zip(trees, samples):
                     break
                 if cut_upper and cut_value > cut_upper:
                     break
-            else: # Only proceed if all cuts are satisfied
+            else:  # Only proceed if all cuts are satisfied
                 value = getattr(entry, branch)
                 hist.Fill(value)
 
@@ -107,7 +116,7 @@ for tree, sample in zip(trees, samples):
 canvas = ROOT.TCanvas()
 canvas.SetLeftMargin(0.15)
 
-global_max_y = max(map(lambda h: h.GetMaximum(), histograms.values()))
+global_max_y = 0.1  # max(map(lambda h: h.GetMaximum(), histograms.values()))
 global_min_y = min(map(lambda h: h.GetMinimum(), histograms.values()))
 
 print(f"Global max y: {global_max_y}, Global min y: {global_min_y}")
