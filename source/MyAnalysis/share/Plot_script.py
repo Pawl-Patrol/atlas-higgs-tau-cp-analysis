@@ -3,6 +3,7 @@
 import inquirer
 from Run_script import SAMPLES
 import math
+import re
 
 # Define mode constants
 HISTOGRAM_MODE = "Histogram Mode"
@@ -124,18 +125,37 @@ while True:
 histograms = {}
 heatmaps = {}
 
+
 if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+    hist_title_template = inquirer.text(
+        "Enter histogram title template",
+        default="",
+        # default="{{mode1}}-{{mode2}}",
+    )
+
+    hist_name_template = inquirer.text(
+        "Enter histogram name template", default="CP {{cp_nature}}"
+    )
+
     # Original histogram mode
     for tree, sample in zip(trees, samples):
+        cp_nature, decay_mode, hadronic = re.match(
+            r"^cp-(.+?)-(.+?)(?:-H(.+?))?$", SAMPLES[sample]
+        ).groups()
         for branch in branches:
-            hist_title = (
-                SAMPLES[sample]
-                .replace("-hadhad", "")
-                .replace("-hadlep", "")
-                .replace("-lephad", "")
+            match = re.match(r"^phiCP_(.+?)_(.+?)_(.+?)$", branch)
+            args = dict(
+                cp_nature=cp_nature,
+                decay_mode=decay_mode,
+                hadronic=hadronic or "125",
             )
-            hist_name = branch.replace("phiCP_", "")
-            hist_title, hist_name = hist_name, hist_title
+            if match:
+                mode1, mode2, info_type = match.groups()
+                args.update(mode1=mode1, mode2=mode2, info_type=info_type)
+
+            hist_title = hist_title_template.format(**args)
+            hist_name = hist_name_template.format(**args)
+
             hist = ROOT.TH1F(hist_name, hist_name, BINS, lower, upper)
             hist.SetTitle(hist_title)
 
@@ -293,7 +313,7 @@ if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
             fit_func.SetParLimits(
                 0, amplitude_guess / 1.5, amplitude_guess * 1.5
             )  # A should be positive and reasonable
-            fit_func.SetParLimits(1, 0.8, 1.2)  # B
+            fit_func.SetParLimits(1, 0.95, 1.05)  # B
             fit_func.SetParLimits(2, 0, math.pi * 2)  # C
             fit_func.SetParLimits(3, min_val, max_val)  # D
 
@@ -356,30 +376,24 @@ else:
         # Use COLZ option for color heatmap
         heatmap.Draw("COLZ" if i == 0 else "COLZ SAME")
 
-if plot_mode == HISTOGRAM_MODE:
-    legend = ROOT.TLegend(0.7, 0.8, 0.9, 0.9)
-    if plot_mode == HISTOGRAM_MODE:
-        for name, hist in histograms.items():
-            legend.AddEntry(hist, name, "l")
-    else:
-        for name, heatmap in heatmaps.items():
-            legend.AddEntry(heatmap, name, "f")
+if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+    legend = ROOT.TLegend(0.8, 0.8, 0.9, 0.9)
+    for name, hist in histograms.items():
+        legend.AddEntry(hist, name, "l")
     legend.Draw()
     canvas.Update()
 
-output_filename = inquirer.text(
-    "Enter output filename for canvas.", default="result.png"
-)
+base = inquirer.text("Enter output filename for canvas.", default="result")
 
-base, ext = os.path.splitext(output_filename)
+output_filename = f"{base}.png"
 
 # Ensure the output filename is unique
 counter = 1
 while os.path.exists(output_filename):
-    output_filename = f"{base}_{counter:02d}{ext}"
+    output_filename = f"{base}_{counter:02d}.png"
     counter += 1
 
-canvas.SetCanvasSize(1920, 1080)
+# canvas.SetCanvasSize(1920, 1080)
 canvas.SaveAs(output_filename)
 
 for file in files:
@@ -388,7 +402,7 @@ for file in files:
 
 # Save fit results to a text file (only for histogram + fit mode)
 if plot_mode == HISTOGRAM_FIT_MODE and fit_results:
-    fit_results_file = output_filename.replace(ext, "_fit_results.txt")
+    fit_results_file = output_filename.replace(".png", "_fit_results.txt")
     with open(fit_results_file, "w") as f:
         f.write("Cosine Fit Results: y(x) = A*cos(B*x + C) + D\n")
         f.write("=" * 50 + "\n\n")

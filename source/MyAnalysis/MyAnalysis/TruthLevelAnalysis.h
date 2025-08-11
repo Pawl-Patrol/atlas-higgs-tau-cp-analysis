@@ -18,8 +18,14 @@ private:
   double m_phiCP_lept_1p1n_recon = 0.;
   double m_phiCP_lept_1pXn_truth = 0.;
   double m_phiCP_lept_1pXn_recon = 0.;
+
   double m_phiCP_1p0n_1p0n_truth = 0.;
   double m_phiCP_1p0n_1p0n_recon = 0.;
+  double m_phiCP_1p0n_1p1n_truth = 0.;
+  double m_phiCP_1p0n_1p1n_recon = 0.;
+  double m_phiCP_1p0n_1pXn_truth = 0.;
+  double m_phiCP_1p0n_1pXn_recon = 0.;
+
   double m_phiCP_1p1n_1p1n_truth = 0.;
   double m_phiCP_1p1n_1p1n_recon = 0.;
   double m_phiCP_1p1n_1pXn_truth = 0.;
@@ -27,6 +33,10 @@ private:
 
   double m_d0_sig_tau_pos_track = 0.;
   double m_d0_sig_tau_neg_track = 0.;
+
+  double m_y_tau_pos_track = 0.;
+  double m_y_tau_neg_track = 0.;
+  double m_yy_tau_tracks = 0.;
 
   double m_tau_jets_vtx_diff = 0.;
 };

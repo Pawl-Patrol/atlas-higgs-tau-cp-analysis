@@ -35,4 +35,6 @@ const xAOD::TauJet *GetLeadingJet(const xAOD::TauJetContainer *jets,
 const xAOD::Electron *
 GetLeadingElectron(const xAOD::ElectronContainer *electrons, bool positive);
 
+double upsilon(double chargedEnergy, double neutralEnergy);
+
 #endif

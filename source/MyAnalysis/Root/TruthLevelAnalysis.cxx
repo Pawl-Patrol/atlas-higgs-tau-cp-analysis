@@ -21,6 +21,10 @@ StatusCode TruthLevelAnalysis::initialize() {
   // Hadronic observables
   myTree->Branch("phiCP_1p0n_1p0n_truth", &m_phiCP_1p0n_1p0n_truth);
   myTree->Branch("phiCP_1p0n_1p0n_recon", &m_phiCP_1p0n_1p0n_recon);
+  myTree->Branch("phiCP_1p0n_1p1n_truth", &m_phiCP_1p0n_1p1n_truth);
+  myTree->Branch("phiCP_1p0n_1p1n_recon", &m_phiCP_1p0n_1p1n_recon);
+  myTree->Branch("phiCP_1p0n_1pXn_truth", &m_phiCP_1p0n_1pXn_truth);
+  myTree->Branch("phiCP_1p0n_1pXn_recon", &m_phiCP_1p0n_1pXn_recon);
   myTree->Branch("phiCP_1p1n_1p1n_truth", &m_phiCP_1p1n_1p1n_truth);
   myTree->Branch("phiCP_1p1n_1p1n_recon", &m_phiCP_1p1n_1p1n_recon);
   myTree->Branch("phiCP_1p1n_1pXn_truth", &m_phiCP_1p1n_1pXn_truth);
@@ -34,27 +38,46 @@ StatusCode TruthLevelAnalysis::initialize() {
   myTree->Branch("phiCP_lept_1pXn_truth", &m_phiCP_lept_1pXn_truth);
   myTree->Branch("phiCP_lept_1pXn_recon", &m_phiCP_lept_1pXn_recon);
 
-  // For debugging purposes
+  // For applying cuts
   myTree->Branch("d0_sig_tau_pos_track", &m_d0_sig_tau_pos_track);
   myTree->Branch("d0_sig_tau_neg_track", &m_d0_sig_tau_neg_track);
+  myTree->Branch("y_tau_pos_track", &m_y_tau_pos_track);
+  myTree->Branch("y_tau_neg_track", &m_y_tau_neg_track);
+  myTree->Branch("yy_tau_tracks", &m_yy_tau_tracks);
+
+  // For debugging purposes
   myTree->Branch("tau_jets_vtx_diff", &m_tau_jets_vtx_diff);
 
   return StatusCode::SUCCESS;
 }
 
 StatusCode TruthLevelAnalysis::execute() {
-  m_phiCP_lept_1p0n_truth = -99.0;
-  m_phiCP_lept_1p0n_recon = -99.0;
   m_phiCP_1p0n_1p0n_truth = -99.0;
   m_phiCP_1p0n_1p0n_recon = -99.0;
+  m_phiCP_1p0n_1p1n_truth = -99.0;
+  m_phiCP_1p0n_1p1n_recon = -99.0;
+  m_phiCP_1p0n_1pXn_truth = -99.0;
+  m_phiCP_1p0n_1pXn_recon = -99.0;
   m_phiCP_1p1n_1p1n_truth = -99.0;
   m_phiCP_1p1n_1p1n_recon = -99.0;
   m_phiCP_1p1n_1pXn_truth = -99.0;
   m_phiCP_1p1n_1pXn_recon = -99.0;
 
-  m_d0_sig_tau_pos_track = 0.0;
-  m_d0_sig_tau_neg_track = 0.0;
-  m_tau_jets_vtx_diff = 0.0;
+  m_phiCP_lept_1p0n_truth = -99.0;
+  m_phiCP_lept_1p0n_recon = -99.0;
+  m_phiCP_lept_1p1n_truth = -99.0;
+  m_phiCP_lept_1p1n_recon = -99.0;
+  m_phiCP_lept_1pXn_truth = -99.0;
+  m_phiCP_lept_1pXn_recon = -99.0;
+
+  m_d0_sig_tau_pos_track = -99.0;
+  m_d0_sig_tau_neg_track = -99.0;
+
+  m_y_tau_pos_track = -99.0;
+  m_y_tau_neg_track = -99.0;
+  m_yy_tau_tracks = -99.0;
+
+  m_tau_jets_vtx_diff = -99.0;
 
   // Containers
   const xAOD::EventInfo *eventInfo = nullptr;
@@ -88,9 +111,9 @@ StatusCode TruthLevelAnalysis::execute() {
   if (result.isFailure() || truthHiggsWithDecayParticles->empty()) {
     ANA_CHECK(evtStore()->retrieve(truthHiggsWithDecayParticles,
                                    "TruthBosonsWithDecayParticles"));
-    ANA_MSG_DEBUG("No BSM Higgs found, falling back to standard Higgs.");
+    ANA_MSG_VERBOSE("No BSM Higgs found, falling back to standard Higgs.");
   } else {
-    ANA_MSG_DEBUG("Found BSM Higgs with decay products.");
+    ANA_MSG_VERBOSE("Found BSM Higgs with decay products.");
   }
 
   // Retrieve beamspot and primary vertex
@@ -331,6 +354,7 @@ StatusCode TruthLevelAnalysis::execute() {
         tauPosTrack, GetVertexVector(tauPosJet->vertex()) - beamSpot);
     TVector3 pionNegImParam = calculateTrackImpactParameter(
         tauNegTrack, GetVertexVector(tauPosJet->vertex()) - beamSpot);
+
     m_phiCP_lept_1p0n_recon = phiCP_ImpactParameter(
         pionPosImParam, pionNegImParam, tauPosTrack->p4(), tauNegTrack->p4(),
         tauPosJet->p4() + electron->p4());
@@ -461,6 +485,10 @@ StatusCode TruthLevelAnalysis::execute() {
       neutralP4Neg += tauNegJet->neutralPFO(i)->p4();
     }
 
+    m_y_tau_pos_track = upsilon(chargedP4Pos.E(), neutralP4Pos.E());
+    m_y_tau_neg_track = upsilon(chargedP4Neg.E(), neutralP4Neg.E());
+    m_yy_tau_tracks = m_y_tau_pos_track * m_y_tau_neg_track;
+
     double phiCP_recon =
         phiCP_Pion_RhoDecayPlane(chargedP4Pos, neutralP4Pos, chargedP4Neg,
                                  neutralP4Neg, chargedP4Pos + chargedP4Neg);
@@ -472,6 +500,69 @@ StatusCode TruthLevelAnalysis::execute() {
     } else {
       m_phiCP_1p1n_1p1n_truth = phiCP_truth;
       m_phiCP_1p1n_1p1n_recon = phiCP_recon;
+    }
+  } else if (tauNegDecayMode == TauDecayMode::HADRONIC_1P0N &&
+             (tauPosDecayMode == TauDecayMode::HADRONIC_1P1N ||
+              tauPosDecayMode == TauDecayMode::HADRONIC_1PXN)) {
+    const xAOD::TauJet *tauPosJet = GetLeadingJet(tauJets, true);
+    const xAOD::TauJet *tauNegJet = GetLeadingJet(tauJets, false);
+
+    if (tauPosJet == nullptr) {
+      ANA_MSG_VERBOSE("Could not find tau+ jet. Excluding event.");
+      return StatusCode::SUCCESS;
+    }
+
+    if (tauNegJet == nullptr) {
+      ANA_MSG_VERBOSE("Could not find tau- jet. Excluding event.");
+      return StatusCode::SUCCESS;
+    }
+
+    ANA_MSG_DEBUG("Found higgs -> tau+ tau- -> pion+ pion0 pion- decay");
+
+    // sum over neutral pions
+    TLorentzVector chargedP4Pos = pPionPos->p4();
+    TLorentzVector neutralP4Pos(0.0, 0.0, 0.0, 0.0);
+    for (const xAOD::TruthParticle *pionZero : pPionZerosOfTauPos) {
+      neutralP4Pos += pionZero->p4();
+    }
+
+    TVector3 imParamNeg = calculateImpactParameter(
+        pPionNeg->prodVtx()->v4().Vect(), pPionNeg->p4().Vect(),
+        pTauNeg->prodVtx()->v4().Vect());
+    double phiCP_truth =
+        phiCP_IP_Rho(imParamNeg, pPionNeg->p4(), chargedP4Pos, neutralP4Pos,
+                     pTauPos->p4() + pTauNeg->p4(), true);
+
+    const xAOD::TrackParticle *tauNegTrack = tauNegJet->track(0)->track();
+
+    m_d0_sig_tau_neg_track = xAOD::TrackingHelpers::d0significance(
+        tauNegTrack, eventInfo->beamPosSigmaX(), eventInfo->beamPosSigmaY(),
+        eventInfo->beamPosSigmaXY());
+
+    chargedP4Pos.SetPxPyPzE(0.0, 0.0, 0.0, 0.0);
+    for (auto track : tauPosJet->tracks()) {
+      chargedP4Pos += track->track()->p4();
+    }
+
+    neutralP4Pos.SetPxPyPzE(0.0, 0.0, 0.0, 0.0);
+    for (size_t i = 0; i < tauPosJet->nNeutralPFOs(); ++i) {
+      neutralP4Pos += tauPosJet->neutralPFO(i)->p4();
+    }
+
+    m_y_tau_pos_track = upsilon(chargedP4Pos.E(), neutralP4Pos.E());
+
+    TVector3 pionNegImParam = calculateTrackImpactParameter(
+        tauNegTrack, GetVertexVector(tauPosJet->vertex()) - beamSpot);
+    double phiCP_recon =
+        phiCP_IP_Rho(pionNegImParam, tauNegTrack->p4(), chargedP4Pos,
+                     neutralP4Pos, tauPosJet->p4() + tauNegJet->p4(), true);
+
+    if (tauPosDecayMode == TauDecayMode::HADRONIC_1PXN) {
+      m_phiCP_1p0n_1pXn_truth = phiCP_truth;
+      m_phiCP_1p0n_1pXn_recon = phiCP_recon;
+    } else {
+      m_phiCP_1p0n_1p1n_truth = phiCP_truth;
+      m_phiCP_1p0n_1p1n_recon = phiCP_recon;
     }
   } else if (tauNegDecayMode == TauDecayMode::LEPTONIC &&
              (tauPosDecayMode == TauDecayMode::HADRONIC_1P1N ||
@@ -495,8 +586,6 @@ StatusCode TruthLevelAnalysis::execute() {
     TLorentzVector chargedP4Pos = pPionPos->p4();
     TLorentzVector neutralP4Pos(0.0, 0.0, 0.0, 0.0);
     for (const xAOD::TruthParticle *pionZero : pPionZerosOfTauPos) {
-      ANA_MSG_DEBUG("Found neutral pion in tau+ decay: "
-                    << pionZero->pdgId() << " " << pionZero->barcode());
       neutralP4Pos += pionZero->p4();
     }
 
@@ -509,6 +598,10 @@ StatusCode TruthLevelAnalysis::execute() {
 
     const xAOD::TrackParticle *tauNegTrack = electron->trackParticle(0);
 
+    m_d0_sig_tau_neg_track = xAOD::TrackingHelpers::d0significance(
+        tauNegTrack, eventInfo->beamPosSigmaX(), eventInfo->beamPosSigmaY(),
+        eventInfo->beamPosSigmaXY());
+
     chargedP4Pos.SetPxPyPzE(0.0, 0.0, 0.0, 0.0);
     for (auto track : tauPosJet->tracks()) {
       chargedP4Pos += track->track()->p4();
@@ -518,6 +611,8 @@ StatusCode TruthLevelAnalysis::execute() {
     for (size_t i = 0; i < tauPosJet->nNeutralPFOs(); ++i) {
       neutralP4Pos += tauPosJet->neutralPFO(i)->p4();
     }
+
+    m_y_tau_pos_track = upsilon(chargedP4Pos.E(), neutralP4Pos.E());
 
     TVector3 pionNegImParam = calculateTrackImpactParameter(
         tauNegTrack, GetVertexVector(tauPosJet->vertex()) - beamSpot);

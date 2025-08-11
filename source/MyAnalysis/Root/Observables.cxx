@@ -39,10 +39,8 @@ double phiCP_Pion_RhoDecayPlane(TLorentzVector pionPosP4,
                                 TLorentzVector pionNeuNegP4,
                                 TLorentzVector referenceFrame) {
   // Calculate y+ and y- in the laboratory frame
-  double yPos =
-      (pionPosP4.E() - pionNeuPosP4.E()) / (pionPosP4.E() + pionNeuPosP4.E());
-  double yNeg =
-      (pionNegP4.E() - pionNeuNegP4.E()) / (pionNegP4.E() + pionNeuNegP4.E());
+  double yPos = upsilon(pionPosP4.E(), pionNeuPosP4.E());
+  double yNeg = upsilon(pionNegP4.E(), pionNeuNegP4.E());
 
   // Boost into reference frame
   TVector3 boostVector = referenceFrame.BoostVector();

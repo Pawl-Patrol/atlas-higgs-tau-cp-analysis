@@ -115,8 +115,24 @@ GetLeadingElectron(const xAOD::ElectronContainer *electrons, bool positive) {
       continue;
     }
 
-    // Skip electrons without tracks
-    if (electron->nTrackParticles() == 0) {
+    // Require 1 track
+    if (electron->nTrackParticles() != 1) {
+      continue;
+    }
+
+    // Require leading track
+    if (electron->trackParticle(0) == nullptr) {
+      continue;
+    }
+
+    // Skip electrons below 20 GeV
+    if (electron->pt() < 20000.0) {
+      continue;
+    }
+
+    // Skip electrons outside the barrel and endcap regions
+    if (abs(electron->eta()) > 2.47 ||
+        (abs(electron->eta()) > 1.37 && abs(electron->eta()) < 1.52)) {
       continue;
     }
 
@@ -126,4 +142,9 @@ GetLeadingElectron(const xAOD::ElectronContainer *electrons, bool positive) {
   }
 
   return leadingElectron;
+}
+
+/* y = (E_pm - E_0) / (E_pm + E_0) */
+double upsilon(double chargedEnergy, double neutralEnergy) {
+  return (chargedEnergy - neutralEnergy) / (chargedEnergy + neutralEnergy);
 }
