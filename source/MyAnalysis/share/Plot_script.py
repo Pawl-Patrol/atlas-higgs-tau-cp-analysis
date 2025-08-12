@@ -139,7 +139,7 @@ if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
 
     # Original histogram mode
     for tree, sample in zip(trees, samples):
-        cp_nature, decay_mode, hadronic = re.match(
+        cp_nature, decay_mode, mass = re.match(
             r"^cp-(.+?)-(.+?)(?:-H(.+?))?$", SAMPLES[sample]
         ).groups()
         for branch in branches:
@@ -147,7 +147,7 @@ if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
             args = dict(
                 cp_nature=cp_nature,
                 decay_mode=decay_mode,
-                hadronic=hadronic or "125",
+                mass=mass or "125",
             )
             if match:
                 mode1, mode2, info_type = match.groups()
