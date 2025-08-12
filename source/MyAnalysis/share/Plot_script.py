@@ -8,16 +8,22 @@ import re
 # Define mode constants
 HISTOGRAM_MODE = "Histogram Mode"
 HISTOGRAM_FIT_MODE = "Histogram + Fit Mode"
+HISTOGRAM_FIT_UNCERTAINTY_MODE = "Histogram + Fit + Uncertainties Mode"
 SCATTER_MODE = "X-Y Scatter Plot Mode"
 
 # Choose the plot mode
 plot_mode = inquirer.list_input(
     "Select plot mode:",
-    choices=[HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, SCATTER_MODE],
+    choices=[
+        HISTOGRAM_MODE,
+        HISTOGRAM_FIT_MODE,
+        HISTOGRAM_FIT_UNCERTAINTY_MODE,
+        SCATTER_MODE,
+    ],
     default=HISTOGRAM_MODE,
 )
 
-if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
     # Current histogram mode
     samples = inquirer.checkbox(
         "Which samples do you want to load?",
@@ -82,7 +88,7 @@ for tree in trees:
 
 branch_names = sorted(branch_names)
 
-if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
     branches = inquirer.checkbox(
         "Which branches do you want to plot?",
         choices=list(branch_names),
@@ -126,7 +132,7 @@ histograms = {}
 heatmaps = {}
 
 
-if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
     hist_title_template = inquirer.text(
         "Enter histogram title template",
         default="",
@@ -238,8 +244,8 @@ else:
             integral = heatmap.Integral()
             print(f"2D heatmap with {BINS_X}x{BINS_Y} with integral {integral:.0f}")
 
-# Define the fit function: y(x) = A*cos(B*x + C) + D (only for histogram + fit mode)
-if plot_mode == HISTOGRAM_FIT_MODE:
+# Define the fit function: y(x) = A*cos(B*x + C) + D (for histogram + fit modes)
+if plot_mode in [HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
     fit_function = ROOT.TF1("cosine_fit", "[0]*cos([1]*x + [2]) + [3]", lower, upper)
     fit_function.SetParNames("A", "B", "C", "D")
     # Set initial parameter estimates (you may need to adjust these based on your data)
@@ -251,17 +257,37 @@ if plot_mode == HISTOGRAM_FIT_MODE:
 # Store fit results for each histogram
 fit_results = {}
 
-canvas = ROOT.TCanvas()
-canvas.SetLeftMargin(0.15)
+# Create canvas with ratio plot for uncertainty mode
+if plot_mode == HISTOGRAM_FIT_UNCERTAINTY_MODE:
+    canvas = ROOT.TCanvas("canvas", "canvas", 800, 800)
+    canvas.Divide(1, 2)
 
-if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+    # Main plot pad (top)
+    pad1 = canvas.cd(1)
+    pad1.SetPad(0, 0.3, 1, 1)
+    pad1.SetBottomMargin(0.02)
+    pad1.SetLeftMargin(0.18)  # Match ratio pad margin
+
+    # Ratio plot pad (bottom)
+    pad2 = canvas.cd(2)
+    pad2.SetPad(0, 0, 1, 0.3)
+    pad2.SetTopMargin(0.02)
+    pad2.SetBottomMargin(0.4)
+    pad2.SetLeftMargin(0.18)  # Increased left margin for y-axis labels
+
+    canvas.cd(1)  # Start with main pad
+else:
+    canvas = ROOT.TCanvas()
+    canvas.SetLeftMargin(0.15)
+
+if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
     global_max_y = max(map(lambda h: h.GetMaximum(), histograms.values()))
     global_min_y = min(map(lambda h: h.GetMinimum(), histograms.values()))
 else:
     # For scatter plots, we don't need global max/min for histograms
     pass
 
-if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
     print(f"Global max y: {global_max_y}, Global min y: {global_min_y}")
 
 COLORS = [
@@ -277,7 +303,10 @@ COLORS = [
     ROOT.kGray,
 ]
 
-if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
+    # Store ratio histograms for uncertainty mode
+    ratio_histograms = {}
+
     # Original histogram plotting and fitting code
     for i, (name, hist) in enumerate(histograms.items()):
         if i == 0:
@@ -285,11 +314,22 @@ if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
             hist.SetMinimum(global_min_y * 0.95)
             hist.GetXaxis().SetTitle(x_label)
             hist.GetYaxis().SetTitle(y_label)
-        hist.SetLineColor(COLORS[i])
-        hist.Draw("HIST" if i == 0 else "HIST SAME")
 
-        # Perform the fit only in HISTOGRAM_FIT_MODE
-        if plot_mode == HISTOGRAM_FIT_MODE:
+            # For uncertainty mode, hide x-axis labels on main plot
+            if plot_mode == HISTOGRAM_FIT_UNCERTAINTY_MODE:
+                hist.GetXaxis().SetLabelSize(0)
+                hist.GetXaxis().SetTitleSize(0)
+
+        hist.SetLineColor(COLORS[i])
+
+        # For uncertainty mode, draw with error bars
+        if plot_mode == HISTOGRAM_FIT_UNCERTAINTY_MODE:
+            hist.Draw("E1" if i == 0 else "E1 SAME")
+        else:
+            hist.Draw("HIST" if i == 0 else "HIST SAME")
+
+        # Perform the fit for both fit modes
+        if plot_mode in [HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
             print(f"Fitting histogram '{name}' with cosine function...")
 
             # Create a unique fit function for each histogram
@@ -311,17 +351,17 @@ if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
 
             # Set reasonable parameter limits if needed
             fit_func.SetParLimits(
-                0, amplitude_guess / 1.5, amplitude_guess * 1.5
+                0, amplitude_guess * 0.5, amplitude_guess * 2
             )  # A should be positive and reasonable
-            fit_func.SetParLimits(1, 0.95, 1.05)  # B
+            fit_func.SetParLimits(1, 0.5, 2.0)  # B
             fit_func.SetParLimits(2, 0, math.pi * 2)  # C
             fit_func.SetParLimits(3, min_val, max_val)  # D
 
             # Perform the fit
             fit_result = hist.Fit(fit_func, "S")  # "S" option returns fit result
 
-            # Set the fit function color to match the histogram
-            fit_func.SetLineColor(COLORS[i])
+            # Set the fit function color - use black for all fits
+            fit_func.SetLineColor(ROOT.kBlack)
             fit_func.SetLineStyle(2)  # Dashed line for fits
 
             # Draw the fit function
@@ -343,9 +383,72 @@ if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
                         if fit_result.Ndf() > 0
                         else -1
                     ),
+                    "fit_func": fit_func,  # Store function for ratio calculation
                 }
 
-else:
+            # Create ratio histogram for uncertainty mode
+            if (
+                plot_mode == HISTOGRAM_FIT_UNCERTAINTY_MODE
+                and fit_result
+                and fit_result.IsValid()
+            ):
+                ratio_hist = hist.Clone(f"ratio_{name}")
+                ratio_hist.SetTitle("")
+                ratio_hist.Reset()
+
+                # Calculate data/fit ratio for each bin
+                for bin_idx in range(1, hist.GetNbinsX() + 1):
+                    data_value = hist.GetBinContent(bin_idx)
+                    data_error = hist.GetBinError(bin_idx)
+                    bin_center = hist.GetBinCenter(bin_idx)
+                    fit_value = fit_func.Eval(bin_center)
+
+                    if fit_value > 0 and data_value > 0:
+                        ratio = data_value / fit_value
+                        ratio_error = data_error / fit_value if fit_value > 0 else 0
+                        ratio_hist.SetBinContent(bin_idx, ratio)
+                        ratio_hist.SetBinError(bin_idx, ratio_error)
+
+                ratio_hist.SetLineColor(COLORS[i])
+                ratio_hist.SetMarkerColor(COLORS[i])
+                ratio_hist.SetMarkerStyle(20)
+                ratio_hist.SetMarkerSize(0.6)  # Smaller markers
+                ratio_histograms[name] = ratio_hist
+
+    # Draw ratio plots for uncertainty mode
+    if plot_mode == HISTOGRAM_FIT_UNCERTAINTY_MODE and ratio_histograms:
+        canvas.cd(2)  # Switch to ratio pad
+
+        first_ratio = True
+        for i, (name, ratio_hist) in enumerate(ratio_histograms.items()):
+            if first_ratio:
+                ratio_hist.SetMaximum(1.5)
+                ratio_hist.SetMinimum(0.5)
+                ratio_hist.GetXaxis().SetTitle(x_label)
+                ratio_hist.GetYaxis().SetTitle("Data/Fit")
+                ratio_hist.GetYaxis().SetTitleSize(0.12)
+                ratio_hist.GetYaxis().SetLabelSize(0.1)
+                ratio_hist.GetXaxis().SetTitleSize(0.12)
+                ratio_hist.GetXaxis().SetLabelSize(0.1)
+                ratio_hist.GetYaxis().SetTitleOffset(
+                    0.7
+                )  # Increased for better spacing
+                ratio_hist.GetXaxis().SetTitleOffset(1.0)
+                ratio_hist.GetYaxis().SetNdivisions(505)  # Better tick spacing
+                ratio_hist.Draw("E1")
+                first_ratio = False
+            else:
+                ratio_hist.Draw("E1 SAME")
+
+        # Draw horizontal line at y=1
+        line = ROOT.TLine(lower, 1.0, upper, 1.0)
+        line.SetLineStyle(2)
+        line.SetLineColor(ROOT.kBlack)
+        line.Draw("SAME")
+
+        canvas.cd(1)  # Switch back to main pad
+
+elif plot_mode == SCATTER_MODE:
     # X-Y heatmap mode
     for i, (name, heatmap) in enumerate(heatmaps.items()):
         if i == 0:
@@ -376,7 +479,10 @@ else:
         # Use COLZ option for color heatmap
         heatmap.Draw("COLZ" if i == 0 else "COLZ SAME")
 
-if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE]:
+if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE]:
+    if plot_mode == HISTOGRAM_FIT_UNCERTAINTY_MODE:
+        canvas.cd(1)  # Make sure we're on the main pad for the legend
+
     legend = ROOT.TLegend(0.8, 0.8, 0.9, 0.9)
     for name, hist in histograms.items():
         legend.AddEntry(hist, name, "l")
@@ -400,8 +506,8 @@ for file in files:
     file.Close()
 
 
-# Save fit results to a text file (only for histogram + fit mode)
-if plot_mode == HISTOGRAM_FIT_MODE and fit_results:
+# Save fit results to a text file (for both fit modes)
+if plot_mode in [HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_MODE] and fit_results:
     fit_results_file = output_filename.replace(".png", "_fit_results.txt")
     with open(fit_results_file, "w") as f:
         f.write("Cosine Fit Results: y(x) = A*cos(B*x + C) + D\n")
