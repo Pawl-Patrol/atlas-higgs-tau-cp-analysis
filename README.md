@@ -1,6 +1,8 @@
 # Overview
 
-Contains code and scripts used for creating plots of CP-sensitive observables in Higgs -> tau tau decays at ATLAS. Based on [this](https://atlassoftwaredocs.web.cern.ch/analysis-software/AnalysisSWTutorial/).
+Contains code and scripts used for analysis of CP-sensitive observables in H -> ττ decays at ATLAS. 
+
+This project is based on [this](https://atlassoftwaredocs.web.cern.ch/analysis-software/AnalysisSWTutorial/) template and forked from [here](https://gitlab.cern.ch/atlas-analysis-sw-tutorial/MyAnalysis).
 
 # Usage
 
