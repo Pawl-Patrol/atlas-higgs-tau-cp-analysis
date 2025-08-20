@@ -102,12 +102,8 @@ else:
         "Select branch for Y-axis:", choices=list(branch_names)
     )
 
-    x_label = (
-        x_branch  # inquirer.text(f"X-axis label for {x_branch}", default=x_branch)
-    )
-    y_label = (
-        y_branch  # inquirer.text(f"Y-axis label for {y_branch}", default=y_branch)
-    )
+    x_label = inquirer.text(f"X-axis label for {x_branch}", default="#phi_{{CP}}")
+    y_label = inquirer.text(f"Y-axis label for {y_branch}", default="#phi_{{CP}}")
 
     branches = [x_branch, y_branch]  # For compatibility with existing code
 
@@ -221,12 +217,13 @@ else:
             y_min, y_max = 0.0, 2 * math.pi
 
             heatmap_name = f"heatmap_{sample}"
-            heatmap_title = (
-                SAMPLES[sample]
-                .replace("-hadhad", "")
-                .replace("-hadlep", "")
-                .replace("-lephad", "")
-            )
+            heatmap_title = ""
+            # heatmap_title = (
+            # SAMPLES[sample]
+            # .replace("-hadhad", "")
+            # .replace("-hadlep", "")
+            # .replace("-lephad", "")
+            # )
 
             # Create 2D histogram
             heatmap = ROOT.TH2F(
@@ -360,8 +357,8 @@ if plot_mode in [HISTOGRAM_MODE, HISTOGRAM_FIT_MODE, HISTOGRAM_FIT_UNCERTAINTY_M
             # Perform the fit
             fit_result = hist.Fit(fit_func, "S")  # "S" option returns fit result
 
-            # Set the fit function color - use black for all fits
-            fit_func.SetLineColor(ROOT.kBlack)
+            # Set the fit function color to match the histogram
+            fit_func.SetLineColor(COLORS[i])
             fit_func.SetLineStyle(2)  # Dashed line for fits
 
             # Draw the fit function
